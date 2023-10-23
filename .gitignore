@@ -21,3 +21,6 @@ dist
 *.njsproj
 *.sln
 *.sw?
+
+.stack-work
+*~
