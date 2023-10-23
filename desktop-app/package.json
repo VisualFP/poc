@@ -16,7 +16,7 @@
     "serve:electron": "set APP_IS_DEV=yes && yarn build && wait-on tcp:3000 && electron .",
     "build:frontend": "cd frontend && yarn build",
     "build:electron": "yarn build",
-    "app:build": "yarn build:frontend && yarn build:electron"
+    "build:app": "yarn build:frontend && yarn build:electron"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
