@@ -10,9 +10,6 @@ executable visual-fp-frontend
     main-is:            Main.hs
     other-modules:
         Frontend
-        Paths_visual_fp_frontend
-    autogen-modules:
-        Paths_visual_fp_frontend
     build-depends:
         base ^>=4.18.0.0,
         threepenny-gui >=0.9 && <1,

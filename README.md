@@ -8,8 +8,4 @@ Proof-of-Concept for the VisualFP application
 * ghc
 
 ## Run application
-To run the PoC application, go into the electron-app directory and execute:
-```
-yarn build:haskell
-yarn start
-```
+To run the PoC application, go into the electron-app directory and execute `yarn start`.

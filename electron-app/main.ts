@@ -28,7 +28,7 @@ freeport((err, port) => {
     // browser windows. Some APIs can only be used after this event occurs. We
     // start the child process and wait before loading the web page.
     app.on('ready', () => {
-        child = spawn(joinPath(__dirname, relBin), [port.toString()]);
+        child = spawn(joinPath(__dirname, relBin), [port.toString(), __dirname]);
         child.stdout.setEncoding('utf8');
         child.stderr.setEncoding('utf8');
         child.stdout.on('data', console.log);

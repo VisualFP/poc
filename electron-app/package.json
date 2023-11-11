@@ -7,7 +7,7 @@
     "scripts": {
         "build:haskell": "cd .. && ./buildHaskell.sh",
         "build": "tsc",
-        "start": "yarn run build && electron ."
+        "start": "yarn run build && yarn run build:haskell && electron ."
     },
     "devDependencies": {
         "@types/freeport": "^1.0.24",
