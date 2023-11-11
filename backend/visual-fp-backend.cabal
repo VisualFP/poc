@@ -1,0 +1,14 @@
+cabal-version:      2.4
+name:               visual-fp-backend
+version:            0.1.0.0
+license:            MIT
+author:             Lukas Streckeisen & Jann Flepp
+copyright:          2023 Lukas Streckeisen & Jann Flepp
+
+library
+    exposed-modules:
+        MyLib
+    build-depends:
+        base ^>=4.18.0.0
+    hs-source-dirs:     src
+    default-language:   Haskell2010

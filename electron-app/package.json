@@ -1,0 +1,23 @@
+{
+    "name": "visual-fp-app",
+    "version": "1.0.0",
+    "main": "build/main.js",
+    "license": "MIT",
+    "author": "Lukas Streckeisen & Jann Flepp",
+    "scripts": {
+        "build:haskell": "cd .. && ./buildHaskell.sh",
+        "build": "tsc",
+        "start": "yarn run build && electron ."
+    },
+    "devDependencies": {
+        "@types/freeport": "^1.0.24",
+        "@types/wait-on": "5.3.4",
+        "electron": "27.0.4",
+        "ncp": "2.0.0",
+        "typescript": "5.2.2"
+    },
+    "dependencies": {
+        "freeport": "1.0.5",
+        "wait-on": "7.1.0"
+    }
+}
