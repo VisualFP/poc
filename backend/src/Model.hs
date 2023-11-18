@@ -30,7 +30,8 @@ data TypeConstructor = TypeConstructor
     }
 
 data TypeHole = TypeHole
-  { signature :: String
+  { typeHoleId :: String
+  , typeHoleSignature :: String
   } deriving (Show)
 
 data UserDefinedFunction = FunctionValue Value | TypeHoleArg TypeHole
