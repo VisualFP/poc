@@ -137,4 +137,5 @@ integrationTests = TestLabel "IntegrationTests" $ TestList [
     variableReuseTest,
     simpleLambdaTest,
     lambdaArgumentInferrenceTest,
-    lambdaWrongReturnTypeTest ]
+    lambdaWrongReturnTypeTest,
+    lambdaCrossReferenceTest ]
