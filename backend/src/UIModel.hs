@@ -44,7 +44,7 @@ data FunctionCall = FunctionCall
   }
   deriving (Show)
 
-data FunctionArgument = LambdaArg LambdaBinding | FunctionRefArg FunctionRef | TypeArg TypeArgument | TypeHoleParam TypeHole
+data FunctionArgument = ArgumentValue Value | TypeHoleParam TypeHole
   deriving (Show)
 
 data FunctionRef = FunctionRef

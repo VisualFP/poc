@@ -26,7 +26,7 @@ setup window = do
     _ <- element appContainer #+ [element sideBarContainer, element functionEditorContainer]
     _ <- getBody window #+ [element appContainer]
 
-    resetEditorAndRenderFunction window functionEditorContainer "id1"
+    resetEditorAndRenderFunction window functionEditorContainer "id3"
     _ <- element sideBarContainer #+ renderSidebar (map snd functions)
 
     return ()
@@ -40,7 +40,7 @@ resetEditorAndRenderFunction window functionEditor funcId = do
         Just function -> do
             let functionElement = generateComposedFunction function
             _ <- element functionEditor #+ [functionElement]
-            registerFunctionDroppedEvent window functionEditor function
+            registerFunctionDroppedEvents window functionEditor function
             return ()
         Nothing -> return ()
 
@@ -53,20 +53,24 @@ renderFunction :: Maybe Function -> Maybe (UI Element)
 renderFunction (Just f) = Just $ generateComposedFunction f
 renderFunction Nothing = Nothing
 
-registerFunctionDroppedEvent :: Window -> Element -> Function -> UI ()
-registerFunctionDroppedEvent window functionEditor function = do
+registerFunctionDroppedEvents :: Window -> Element -> Function -> UI ()
+registerFunctionDroppedEvents window functionEditor function = do
     let typeHoles = getTypeHolesFromFunction $ definition function
-    maybeEvent <- getFunctionDroppedEvents window typeHoles
-    case maybeEvent of
-        Just event -> do
-            _ <- onEvent event $ \es -> do
-                runFunction $ ffi "console.log('Hi Event')"
-                mapM_ (\e -> replaceTypeHoleWithFunction (functionId function) (functionDragData e) (functionDropTargetId e)) es
-                resetEditorAndRenderFunction window functionEditor "id2"
-            return ()
+    runFunction $ ffi $ "console.log('found " ++ show (length typeHoles) ++ " type holes')"
+    maybeEvents <- getFunctionDroppedEvents window typeHoles
+    case maybeEvents of
+        Just events -> do
+            mapM_ (registerFunctionDroppedEvent window functionEditor function) events
         Nothing -> do
             return ()
 
+registerFunctionDroppedEvent :: Window -> Element -> Function -> Event FunctionDroppedEvent -> UI ()
+registerFunctionDroppedEvent window functionEditor function event = do
+    _ <- onEvent event $ \dropEvent -> do
+        replaceTypeHoleWithFunction (functionId function) (functionDragData dropEvent) (functionDropTargetId dropEvent)
+        resetEditorAndRenderFunction window functionEditor "id4"
+        return ()
+    return ()
 
 renderSidebar :: [Function] -> [UI Element]
 renderSidebar = map renderSidebarFunctionBlock

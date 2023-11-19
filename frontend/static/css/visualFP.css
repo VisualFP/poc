@@ -44,6 +44,9 @@ div {
 
 #function-editor-container div.composed-function {
     margin: auto auto;
+}
+
+#function-editor-container div.function-editor-element {
     gap: 10px;
     align-items: baseline;
 }
