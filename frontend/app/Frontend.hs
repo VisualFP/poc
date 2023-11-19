@@ -4,7 +4,7 @@ import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 import FunctionEditor (generateComposedFunction, FunctionDroppedEvent (..), getTypeHolesFromFunction, getFunctionDroppedEvents, replaceTypeHoleWithFunction)
 import Functions (lookupFunction, functions)
-import Model (Function (functionId, definition), functionName)
+import UIModel (Function (functionId, definition), functionName)
 
 start :: Int -> String -> IO()
 start port dir = startGUI defaultConfig

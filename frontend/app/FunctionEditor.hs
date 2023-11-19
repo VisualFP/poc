@@ -3,7 +3,7 @@ module FunctionEditor where
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
-import Model
+import UIModel
 import Data.Maybe (maybeToList, catMaybes)
 
 data FunctionDroppedEvent = FunctionDroppedEvent
@@ -21,7 +21,7 @@ generateComposedFunction function = do
 
 generateFunctionDefinitionElement :: FunctionDefinition -> Maybe (UI Element)
 generateFunctionDefinitionElement (UserFunction f) = Just (generateFunctionDefinition f)
-generateFunctionDefinitionElement _ = Nothing
+generateFunctionDefinitionElement BuiltInFunction = Nothing
 
 generateFunctionDefinition :: UserDefinedFunction -> UI Element
 generateFunctionDefinition (TypeHoleArg (TypeHole { typeHoleSignature = typeSignature, typeHoleId = holeId })) = UI.new # set UI.text typeSignature
