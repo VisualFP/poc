@@ -1,7 +1,7 @@
 module Main where
 
 import System.Environment ( getArgs )
-import Frontend (start)
+import VFP.Frontend (start)
 
 main :: IO ()
 main = do

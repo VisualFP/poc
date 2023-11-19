@@ -1,4 +1,4 @@
-module UIModel where
+module VFP.UI.UIModel where
 
 data Function = Function
   { functionId :: String,
