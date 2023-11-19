@@ -5,7 +5,7 @@ import Graphics.UI.Threepenny.Core
 
 import VFP.UI.UIModel
 import Data.Maybe (maybeToList, catMaybes)
-import Functions (lookupFunction)
+import VFP.UI.Functions (lookupFunction)
 
 data FunctionDroppedEvent = FunctionDroppedEvent
     { functionDropTargetId :: String
