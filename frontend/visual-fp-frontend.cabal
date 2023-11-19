@@ -9,7 +9,8 @@ copyright:          2023 Lukas Streckeisen & Jann Flepp
 executable visual-fp-frontend
     main-is:            Main.hs
     other-modules:
-        Frontend
+        Frontend,
+        FunctionEditor
     build-depends:
         base ^>=4.18.0.0,
         threepenny-gui >=0.9 && <1,
