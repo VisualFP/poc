@@ -1,9 +1,9 @@
-module FunctionEditor where
+module VFP.FunctionEditor where
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
-import UIModel
+import VFP.UI.UIModel
 import Data.Maybe (maybeToList, catMaybes)
 
 data FunctionDroppedEvent = FunctionDroppedEvent

@@ -1,10 +1,10 @@
-module Frontend where
+module VFP.Frontend where
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
-import FunctionEditor (generateComposedFunction, FunctionDroppedEvent (..), getTypeHolesFromFunction, getFunctionDroppedEvents, replaceTypeHoleWithFunction)
-import Functions (lookupFunction, functions)
-import UIModel (Function (functionId, definition), functionName)
+import VFP.FunctionEditor (generateComposedFunction, FunctionDroppedEvent (..), getTypeHolesFromFunction, getFunctionDroppedEvents, replaceTypeHoleWithFunction)
+import VFP.UI.Functions (lookupFunction, functions)
+import VFP.UI.UIModel (Function (functionId, definition), functionName)
 
 start :: Int -> String -> IO()
 start port dir = startGUI defaultConfig

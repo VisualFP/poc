@@ -1,6 +1,6 @@
-module Functions where
+module VFP.UI.Functions where
 
-import UIModel
+import VFP.UI.UIModel
 
 functions :: [( String, Function )]
 functions = [
