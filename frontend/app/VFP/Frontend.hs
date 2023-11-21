@@ -28,7 +28,7 @@ setup window = do
     _ <- element appContainer #+ [element sideBarContainer, element functionEditorContainer]
     _ <- getBody window #+ [element appContainer]
 
-    resetEditorAndRenderFunction window functionEditorContainer "id3"
+    resetEditorAndRenderFunction window functionEditorContainer "id1"
     _ <- element sideBarContainer #+ renderSidebar (map snd functions)
 
     return ()
