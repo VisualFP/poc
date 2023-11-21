@@ -1,15 +1,25 @@
 module VFP.Translation.WellKnown where
 
 import qualified Data.Map as Map
-import VFP.Inference.InputModel
+import VFP.UI.UIModel
 
-inputInt :: InputType
-inputInt = InputPrimitive "int"
+int :: Type
+int = Primitive "int"
 
-inputString :: InputType
-inputString = InputPrimitive "string"
+string :: Type
+string = Primitive "string"
 
-lookupWellKnownInputConstant :: String -> InputExpression
-lookupWellKnownInputConstant "1" = InputConstant inputInt "1" 
-lookupWellKnownInputConstant "plus" = InputConstant (InputFunction inputInt (InputFunction inputInt inputInt)) "1" 
-lookupWellKnownInputType _ = InputConstant inputInt ""
+one :: TypedValue
+one = TypedReference int "1" [] 
+
+two :: TypedValue
+two = TypedReference int "2" [] 
+
+plus :: TypedValue
+plus = TypedReference (Function int (Function int int)) "plus" [] 
+
+intToString :: TypedValue
+intToString = TypedReference (Function int string) "intToString" [] 
+
+prelude :: [TypedValue]
+prelude = [one, two, plus, intToString]
