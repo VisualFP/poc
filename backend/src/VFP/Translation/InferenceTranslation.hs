@@ -8,24 +8,28 @@ import VFP.Inference.Elaboration (elaboration)
 import VFP.Inference.Unification (unification)
 import VFP.Inference.Zonking (zonking)
 
+
 buildInputTree :: UI.UntypedValue -> I.InputExpression
-buildInputTree (UI.Reference name arguments) =
-    let input = WellKnown.lookupWellKnownInputConstant name in
+buildInputTree _ = error "not implemented"
+{-
+buildInputTree :: UI.UntypedValue -> I.InputExpression
+buildInputTree (UI.Reference typ identifier arguments) =
     case arguments of
-    UI.Unknown ->
-        case I.getInputType input of
-            (I.InputFunction func arg) -> I.InputApplication I.InputUnknownType input (I.InputConstant I.InputUnknownType "")
-            _ -> input
-        where
-            buildInputFunctionWithArgs :: String -> I.InputType -> I.InputExpression
-            buildInputFunctionWithArgs name (I.InputFunction argType resType) =
-                let nestedExpr = buildInputFunctionWithArgs name resType
-                in I.InputApplication (I.getInputType nestedExpr) nestedExpr (I.InputConstant argType "?")
-            buildInputFunctionWithArgs name t = I.InputConstant t name 
-    UI.ArgumentList args ->
-        foldr (\arg expression -> I.InputApplication I.InputUnknownType expression (buildInputTree arg) ) input args
+        UI.ToFill hole ->
+            case input of
+                (I.InputFunction func arg) -> I.InputApplication I.InputUnknownType input (I.InputConstant I.InputUnknownType "")
+                _ -> input
+            where
+                generateHolesToMatchArity :: I.InputExpression -> I.InputExpression
+                generateHolesToMatchArity _ = error "Not implemented yet"
+        UI.ArgumentList args ->
+            foldr (\arg expression -> I.InputApplication I.InputUnknownType expression (buildInputTree arg) ) input args
+-}
 
 buildOutputTree :: O.InferedExpression -> UI.TypedValue
+buildOutputTree _ = error "not implemented"
+
+{-
 buildOutputTree ex = case ex of
     O.InferedConstant name typ -> UI.TypedReference (oToUIType typ) name []
     O.InferedLambda (pName, pTyp) subEx typ -> UI.TypedLambda (oToUIType typ) (pName, oToUIType pTyp) (buildOutputTree subEx)
@@ -37,6 +41,7 @@ buildOutputTree ex = case ex of
     where
         oToUIType :: O.InferedType -> UI.Type
         oToUIType = show
+-}
 
 infere :: UI.UntypedValue -> UI.InferenceResult
 infere untyped =
