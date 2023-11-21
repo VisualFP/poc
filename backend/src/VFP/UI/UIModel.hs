@@ -1,59 +1,20 @@
 module VFP.UI.UIModel where
+import qualified Data.Map.Strict as Map
 
-data Function = Function
-  { functionId :: String,
-    functionName :: String,
-    definition :: FunctionDefinition
-  }
+-- Prelude as a well known list of IDs
+type ValueId = Int
+type TypeMap = Map.Map ValueId String
 
-data FunctionDefinition
-  = UserFunction UserDefinedFunction
-  | BuiltInFunction
+-- The root value is always a string for now
+data ValueReference = ValueReference { referenceName :: String, referenceId :: ValueId }
+data ValueDefinition = ValueDefinition { definitionReference :: ValueReference, definitionValue :: Value }
 
-data TypeHole = TypeHole
-  { typeHoleId :: String,
-    typeHoleSignature :: String
-  }
-  deriving (Show)
+data Arguments = Unknown | ArgumentList [Value]
 
-data UserDefinedFunction = FunctionValue Value | TypeHoleArg TypeHole
-  deriving (Show)
+data Value = TypeHoleValue ValueId
+           | LambdaValue ValueReference Value
+           | ReferenceValue ValueReference Arguments
 
-data Value
-  = LambdaBindingValue LambdaBinding
-  | FunctionRefValue FunctionRef
-  | TypeValueArgument TypeConstructorCall
-  | FunctionCallValue FunctionCall
-  deriving (Show)
+data InferenceResult = Error String | Success ValueDefinition TypeMap
 
-data TypeArgument = TypeValueArg TypeConstructorCall | PrimitiveTypeArg PrimitiveValue
-  deriving (Show)
-
-data PrimitiveValue = IntValue Int | DoubleValue Double | CharValue Char | StringValue String
-  deriving (Show)
-
-data TypeConstructorCall = TypeValue
-  { valueType :: String,
-    typeArgs :: [TypeArgument]
-  }
-  deriving (Show)
-
-data FunctionCall = FunctionCall
-  { functionCallId :: String,
-    functionArgs :: [FunctionArgument]
-  }
-  deriving (Show)
-
-data FunctionArgument = ArgumentValue Value | TypeHoleParam TypeHole
-  deriving (Show)
-
-data FunctionRef = FunctionRef
-  { functionRefId :: String
-  }
-  deriving (Show)
-
-data LambdaBinding = LambdaBinding
-  { param :: String,
-    body :: UserDefinedFunction
-  }
-  deriving (Show)
+--infere :: ValueDefinition -> InferenceResult

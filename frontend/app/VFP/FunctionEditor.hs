@@ -4,77 +4,43 @@ import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 
 import VFP.UI.UIModel
-import Data.Maybe (maybeToList, catMaybes)
-import VFP.UI.Functions (lookupFunction)
+import Data.Maybe (catMaybes, fromMaybe)
+
+import qualified Data.Map.Strict as Map
 
 data FunctionDroppedEvent = FunctionDroppedEvent
     { functionDropTargetId :: String
     , functionDragData :: UI.DragData
-    } deriving Show
+    } deriving (Show, Eq)
 
-generateComposedFunction :: Function -> UI Element
-generateComposedFunction function = do
-    functionElement <- UI.new #. "composed-function function-editor-element"
-    _ <- element functionElement #+ [UI.p # set UI.text (functionName function)]
-    _ <- element functionElement #+ maybeToList (generateFunctionDefinitionElement $ definition function)
-    return functionElement
+generateValueDefinitionElement :: ValueDefinition -> TypeMap -> UI Element
+generateValueDefinitionElement (ValueDefinition { definitionReference = ValueReference { referenceName = valueName, referenceId = valueId }, definitionValue = valueDefinition }) typeMap = do
+    valueDefinitionElement <- UI.new #. "value-definition function-editor-element"
+    _ <- element valueDefinitionElement #+ [UI.p # set UI.text valueName]
+    _ <- element valueDefinitionElement #+ [generateValueElement valueDefinition typeMap]
+    return valueDefinitionElement
 
 
-generateFunctionDefinitionElement :: FunctionDefinition -> Maybe (UI Element)
-generateFunctionDefinitionElement (UserFunction f) = Just (generateFunctionDefinition f)
-generateFunctionDefinitionElement BuiltInFunction = Nothing
+generateValueElement :: Value -> TypeMap -> UI Element
+generateValueElement (TypeHoleValue typeHoleId) typeMap = do
+    let typeHoleType = fromMaybe "Unknown" (Map.lookup typeHoleId typeMap)
+    UI.new # set UI.text typeHoleType
+           # set UI.id_ (show typeHoleId)
+           #. "type-hole"
+           # set UI.droppable True
+generateValueElement (LambdaValue valueRef lambdaValue) typeMap = UI.new # set UI.text "Not yet implemented"
+generateValueElement (ReferenceValue valueRef args) typeMap = UI.new # set UI.text "Not yet implemented"
 
-generateFunctionDefinition :: UserDefinedFunction -> UI Element
-generateFunctionDefinition (TypeHoleArg typeHole) = generateTypeHole typeHole
-generateFunctionDefinition (FunctionValue v) = generateFunctionValue v
+getTypeHolesFromValue :: Value -> [ValueId]
+getTypeHolesFromValue (TypeHoleValue typeHoleId) = [typeHoleId]
+getTypeHolesFromValue (LambdaValue _ lambdaValue) = getTypeHolesFromValue lambdaValue
+getTypeHolesFromValue (ReferenceValue _ args) = getTypeHolesFromArguments args
 
-generateTypeHole :: TypeHole -> UI Element
-generateTypeHole TypeHole { typeHoleSignature = typeSignature, typeHoleId = holeId } = UI.new # set UI.text typeSignature
-                                                                                                                        # set UI.id_ holeId
-                                                                                                                        #. "type-hole"
-                                                                                                                        # set UI.droppable True
+getTypeHolesFromArguments :: Arguments -> [ValueId]
+getTypeHolesFromArguments Unknown = []
+getTypeHolesFromArguments (ArgumentList values) = concatMap getTypeHolesFromValue values
 
-generateFunctionValue :: Value -> UI Element
-generateFunctionValue (LambdaBindingValue l) = UI.new # set UI.text "Not implemented"
-generateFunctionValue (FunctionRefValue (FunctionRef { functionRefId = refId })) = do
-    let maybeReferencedFunction = lookupFunction refId
-    case maybeReferencedFunction of
-        Just referencedFunction -> UI.new # set UI.text (functionName referencedFunction)
-        Nothing -> do
-            runFunction $ ffi $ "console.log('failed to find function with id " ++ refId ++ "')"
-            UI.new #. "error"
-generateFunctionValue (TypeValueArgument typeValue) = UI.new # set UI.text "Not implemented"
-generateFunctionValue (FunctionCallValue (FunctionCall { functionCallId = callId, functionArgs = args })) = do
-    let maybeCalledFunction = lookupFunction callId
-    case maybeCalledFunction of
-        Just calledFunction -> do
-            functionCallElement <- UI.new # set UI.text (functionName calledFunction)
-                                          #. "function-call function-editor-element"
-            let argumentElements = map generateFunctionArguments args
-            _ <- element functionCallElement #+ argumentElements
-            return functionCallElement
-        Nothing -> do
-            runFunction $ ffi $ "console.log('failed to find function with id " ++ callId ++ "')"
-            UI.new #. "error"
-
-generateFunctionArguments :: FunctionArgument -> UI Element
-generateFunctionArguments (TypeHoleParam typeHole) = generateTypeHole typeHole
-generateFunctionArguments (ArgumentValue v) = generateFunctionValue v
-
-getTypeHolesFromFunction :: FunctionDefinition -> [TypeHole]
-getTypeHolesFromFunction (UserFunction (TypeHoleArg t)) = [t]
-getTypeHolesFromFunction (UserFunction (FunctionValue fValue)) = getTypeHolesFromFunctionValue fValue
-getTypeHolesFromFunction _ = []
-
-getTypeHolesFromFunctionValue :: Value -> [TypeHole]
-getTypeHolesFromFunctionValue (FunctionCallValue (FunctionCall { functionArgs = args })) = concatMap getTypeHolesFromFunctionArguments args
-getTypeHolesFromFunctionValue _ = [] -- TODO: get type holes from other values
-
-getTypeHolesFromFunctionArguments :: FunctionArgument -> [TypeHole]
-getTypeHolesFromFunctionArguments (TypeHoleParam typeHole) = [typeHole]
-getTypeHolesFromFunctionArguments _ = [] -- TODO: get type holes from other function arguments
-
-getFunctionDroppedEvents :: Window -> [TypeHole] -> UI (Maybe [Event FunctionDroppedEvent])
+getFunctionDroppedEvents :: Window -> [ValueId] -> UI (Maybe [Event FunctionDroppedEvent])
 getFunctionDroppedEvents window typeHoles = do
     maybeEvents <- mapM (getFunctionDroppedEvent window) typeHoles
     let events = catMaybes maybeEvents
@@ -82,9 +48,14 @@ getFunctionDroppedEvents window typeHoles = do
         then return Nothing
         else return $ Just events
 
-getFunctionDroppedEvent :: Window -> TypeHole -> UI (Maybe (Event FunctionDroppedEvent))
+getFunctionDroppedEventsV2 :: Window -> [ValueId] -> UI [Event FunctionDroppedEvent]
+getFunctionDroppedEventsV2 window typeHoles = do
+    maybeEvents <- mapM (getFunctionDroppedEvent window) typeHoles
+    return $ catMaybes maybeEvents
+
+getFunctionDroppedEvent :: Window -> ValueId -> UI (Maybe (Event FunctionDroppedEvent))
 getFunctionDroppedEvent window typeHole = do
-    let holeId = typeHoleId typeHole
+    let holeId = show typeHole
     maybeTypeHoleElement <- getElementById window holeId
     case maybeTypeHoleElement of
         Just typeHoleElement -> do

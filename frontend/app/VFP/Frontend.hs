@@ -2,9 +2,11 @@ module VFP.Frontend where
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
-import VFP.FunctionEditor (generateComposedFunction, FunctionDroppedEvent (..), getTypeHolesFromFunction, getFunctionDroppedEvents, replaceTypeHoleWithFunction)
+import VFP.FunctionEditor (FunctionDroppedEvent (..), getFunctionDroppedEvents, replaceTypeHoleWithFunction, getTypeHolesFromValue, generateValueDefinitionElement)
 import VFP.UI.Functions (lookupFunction, functions)
-import VFP.UI.UIModel (Function (functionId, definition), functionName)
+import VFP.UI.UIModel ( ValueDefinition(definitionReference, definitionValue), ValueReference (referenceId, referenceName) )
+
+import qualified Data.Map.Strict as Map
 
 start :: Int -> String -> IO()
 start port dir = startGUI defaultConfig
@@ -38,7 +40,7 @@ resetEditorAndRenderFunction window functionEditor funcId = do
     let maybeFunction = lookupFunction funcId
     case maybeFunction of
         Just function -> do
-            let functionElement = generateComposedFunction function
+            let functionElement = generateValueDefinitionElement function Map.empty
             _ <- element functionEditor #+ [functionElement]
             registerFunctionDroppedEvents window functionEditor function
             return ()
@@ -49,37 +51,33 @@ resetEditor functionEditor = do
     _ <- element functionEditor # set children []
     return ()
 
-renderFunction :: Maybe Function -> Maybe (UI Element)
-renderFunction (Just f) = Just $ generateComposedFunction f
-renderFunction Nothing = Nothing
-
-registerFunctionDroppedEvents :: Window -> Element -> Function -> UI ()
-registerFunctionDroppedEvents window functionEditor function = do
-    let typeHoles = getTypeHolesFromFunction $ definition function
+registerFunctionDroppedEvents :: Window -> Element -> ValueDefinition -> UI ()
+registerFunctionDroppedEvents window functionEditor definition = do
+    let typeHoles = getTypeHolesFromValue $ definitionValue definition
     runFunction $ ffi $ "console.log('found " ++ show (length typeHoles) ++ " type holes')"
     maybeEvents <- getFunctionDroppedEvents window typeHoles
     case maybeEvents of
         Just events -> do
-            mapM_ (registerFunctionDroppedEvent window functionEditor function) events
+            mapM_ (registerFunctionDroppedEvent window functionEditor definition) events
         Nothing -> do
             return ()
 
-registerFunctionDroppedEvent :: Window -> Element -> Function -> Event FunctionDroppedEvent -> UI ()
-registerFunctionDroppedEvent window functionEditor function event = do
+registerFunctionDroppedEvent :: Window -> Element -> ValueDefinition -> Event FunctionDroppedEvent -> UI ()
+registerFunctionDroppedEvent window functionEditor definition event = do
     _ <- onEvent event $ \dropEvent -> do
-        replaceTypeHoleWithFunction (functionId function) (functionDragData dropEvent) (functionDropTargetId dropEvent)
+        replaceTypeHoleWithFunction (show $ referenceId $ definitionReference definition) (functionDragData dropEvent) (functionDropTargetId dropEvent)
         resetEditorAndRenderFunction window functionEditor "id4"
         return ()
     return ()
 
-renderSidebar :: [Function] -> [UI Element]
+renderSidebar :: [ValueDefinition] -> [UI Element]
 renderSidebar = map renderSidebarFunctionBlock
 
-renderSidebarFunctionBlock :: Function -> UI Element
-renderSidebarFunctionBlock function = UI.div # set UI.text (functionName function)
+renderSidebarFunctionBlock :: ValueDefinition -> UI Element
+renderSidebarFunctionBlock definition = UI.div # set UI.text (referenceName $ definitionReference definition)
                                              #. "sidebar-function-block"
                                              # set UI.draggable True
-                                             # set UI.dragData (functionId function)
+                                             # set UI.dragData (show $ referenceId $ definitionReference definition)
 
 createAppContainer :: UI Element
 createAppContainer = UI.new # set UI.id_ "visual-fp-application-container"
