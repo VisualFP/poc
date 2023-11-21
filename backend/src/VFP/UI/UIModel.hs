@@ -1,20 +1,22 @@
 module VFP.UI.UIModel where
 import qualified Data.Map.Strict as Map
 
--- Prelude as a well known list of IDs
-type ValueId = Int
-type TypeMap = Map.Map ValueId String
+type Identifier = String
+type Type = String
 
 -- The root value is always a string for now
-data ValueReference = ValueReference { referenceName :: String, referenceId :: ValueId }
-data ValueDefinition = ValueDefinition { definitionReference :: ValueReference, definitionValue :: Value }
+data ValueDefinition = ValueDefinition { definitionType :: Type, definitionName :: Identifier, definitionValue :: UntypedValue }
 
-data Arguments = Unknown | ArgumentList [Value]
+data TypedValue = TypedTypeHole Type Identifier
+                | TypedLambda Type (Type, Identifier) TypedValue
+                | TypedReference Type Identifier [TypedValue]
 
-data Value = TypeHoleValue ValueId
-           | LambdaValue ValueReference Value
-           | ReferenceValue ValueReference Arguments
+data UntypedArguments = Unknown | ArgumentList [UntypedValue]
 
-data InferenceResult = Error String | Success ValueDefinition TypeMap
+data UntypedValue = TypeHole Identifier
+                  | Lambda Identifier UntypedValue
+                  | Reference Identifier UntypedArguments
 
---infere :: ValueDefinition -> InferenceResult
+data InferenceResult = Error String | Success TypedValue
+
+--infere :: UntypedValue -> InferenceResult
