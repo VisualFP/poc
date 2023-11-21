@@ -25,7 +25,7 @@ unifString = UnificationConstantType "String"
 unifList x = UnificationConstructedType "list" [x]
 unifFunction from to = UnificationConstructedType "->" [from, to]
 
-inferredInt = InferredConstantType "int"
-inferredFunction from to = InferredConstructedType "->" [from, to]
-inferredTuple l r = InferredConstructedType "(,)" [l, r]
+inferedInt = InferedConstantType "int"
+inferedFunction from to = InferedConstructedType "->" [from, to]
+inferedTuple l r = InferedConstructedType "(,)" [l, r]
 
