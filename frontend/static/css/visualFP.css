@@ -30,20 +30,36 @@ div {
     padding: 10px 20px;
 }
 
+#visual-fp-sidebar div.prelude-function {
+    width: 80%;
+}
+
 #function-editor-container {
     flex-grow: 4;
 }
 
+#function-editor-container p,
+#visual-fp-sidebar p {
+    margin: 0;
+}
+
 #function-editor-container div,
-#visual-fp-sidebar div.sidebar-function-block {
+#visual-fp-sidebar div.prelude-function {
     border: 1px solid black;
     border-radius: 5px;
     height: min-content;
     padding: 10px;
 }
 
-#function-editor-container div.value-definition {
+#function-editor-container div.value-definition,
+#visual-fp-sidebar div.prelude-function {
     margin: auto auto;
+    flex-direction: column;
+}
+
+#function-editor-container div.value-definition > p.definition-type,
+#visual-fp-sidebar div.prelude-function > p.function-type {
+    align-self: end;
 }
 
 #function-editor-container div.function-editor-element {

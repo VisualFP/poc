@@ -30,6 +30,7 @@ functions = [
         --      )
         --  )
         --})
+        ("id4", ValueDefinition { definitionName = "functionFour", definitionType = Primitive "String", definitionValue = TypeHole })
     ]
 
 lookupFunction :: String -> Maybe ValueDefinition

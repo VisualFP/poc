@@ -15,6 +15,7 @@ data ValueDefinition = ValueDefinition { definitionType :: Type, definitionName 
 data TypedValue = TypedTypeHole Type Identifier -- Identifier = Increasing, inkonsistent number
                 | TypedLambda Type (Type, Identifier) TypedValue
                 | TypedReference Type Identifier [TypedValue]
+                deriving Show
 
 --                      TypeHole      FilledArgs
 data UntypedArguments = ToFill Type | ArgumentList [UntypedValue]
