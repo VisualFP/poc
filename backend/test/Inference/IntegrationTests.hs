@@ -82,7 +82,7 @@ typeHoleFunctionInTypedApplicationTest = TestLabel "typeHoleFunctionInTypedAppli
                 (InputConstant inputUnknownType  "?1")
                 (InputConstant inputInt "3"))
             (InputConstant inputInt  "2")
-        expected = inferedFunction inferedInt (inferedFunction inferedInt inferedInt)
+        expected = InferedFunctionType inferedInt (InferedFunctionType inferedInt inferedInt)
         result = runPipeline input
     in assertType expected $ findTypeOfIdentifier "?1" result
 
@@ -91,7 +91,7 @@ variableReuseTest = TestLabel "variableReuseTest" $ TestCase $
     let input = InputTuple inputUnknownType
             (InputConstant inputInt  "a")
             (InputConstant InputUnknownType  "a")
-        expected = inferedTuple inferedInt inferedInt
+        expected = InferedTupleType inferedInt inferedInt
         result = runPipeline input
     in assertType expected $ getTopmostType result
 
@@ -99,7 +99,7 @@ simpleLambdaTest :: Test
 simpleLambdaTest = TestLabel "simpleLambdaTest" $ TestCase $
     let input = InputLambda (InputFunction inputInt (InputTupleType inputInt inputInt)) "a"
             (InputTuple inputUnknownType (InputConstant InputUnknownType "a") (InputConstant InputUnknownType "a"))
-        expected = inferedFunction inferedInt $ inferedTuple inferedInt inferedInt
+        expected = InferedFunctionType inferedInt $ InferedTupleType inferedInt inferedInt
         result = runPipeline input
     in assertType expected $ getTopmostType result
 
@@ -107,7 +107,7 @@ lambdaArgumentInferenceTest :: Test
 lambdaArgumentInferenceTest = TestLabel "lambdaArgumentInferenceTest" $ TestCase $
     let input = InputLambda InputUnknownType "a"
             (InputApplication InputUnknownType (InputApplication InputUnknownType inputPlus (InputConstant InputUnknownType "a")) (InputConstant InputUnknownType "a"))
-        expected = inferedFunction inferedInt inferedInt
+        expected = InferedFunctionType inferedInt inferedInt
         result = runPipeline input
     in assertType expected $ getTopmostType result
 
