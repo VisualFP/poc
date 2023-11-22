@@ -2,14 +2,19 @@ module VFP.Frontend where
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
-import VFP.FunctionEditor (FunctionDroppedEvent (..), generateValueDefinitionElement, getFunctionDroppedEvents, getTypeHolesFromValue)
-import VFP.UI.Functions (functions, lookupFunction)
+import VFP.FunctionEditor (FunctionDroppedEvent (..), generateValueDefinitionElement, getFunctionDroppedEvents, getTypeHolesFromValue, replaceTypeHoleWithTypedValue, ValueDefinitionUpdateResult (..))
+import VFP.UI.Functions (lookupFunction)
 import VFP.UI.UIModel
-  ( InferenceResult (..),
-    TypedValue (..),
+  ( InferenceResult (Error, Success),
+    Type (Function, Primitive),
+    TypedValue (TypedLambda, TypedReference, TypedTypeHole),
     UntypedValue,
     ValueDefinition (definitionName, definitionType, definitionValue),
   )
+import VFP.Translation.WellKnown (prelude)
+import Control.Monad (unless)
+
+-- import VFP.Translation.InferenceTranslation (infere)
 
 start :: Int -> String -> IO ()
 start port dir = startGUI
@@ -32,63 +37,75 @@ setup window = do
   _ <- element appContainer #+ [element sideBarContainer, element functionEditorContainer]
   _ <- getBody window #+ [element appContainer]
 
-  resetEditorAndRenderFunction window functionEditorContainer "id4"
-  _ <- element sideBarContainer #+ renderSidebar (map snd functions)
-
-  return ()
-
-resetEditorAndRenderFunction :: Window -> Element -> String -> UI ()
-resetEditorAndRenderFunction window functionEditor funcId = do
-  runFunction $ ffi $ "console.log('render function: " ++ funcId ++ "')"
-  resetEditor functionEditor
-  let maybeFunction = lookupFunction funcId
-  case maybeFunction of
+  case lookupFunction "id4" of
     Just valueDefinition -> do
       let inferenceResult = infer (definitionValue valueDefinition)
       case inferenceResult of
-        Error e -> do
-          runFunction $ ffi $ "console.log('" ++ e ++ "')"
         Success typedValue -> do
-          let functionElement = generateValueDefinitionElement (definitionName valueDefinition) (definitionType valueDefinition) typedValue
-          _ <- element functionEditor #+ [functionElement]
-          registerFunctionDroppedEvents window functionEditor typedValue
-      return ()
-    Nothing -> return ()
+          resetEditorAndRenderFunction window functionEditorContainer (definitionName valueDefinition) (definitionType valueDefinition) typedValue
+        Error e -> do
+          runFunction $ ffi $ "console.error('" ++ e ++ "')"
+    Nothing -> do
+      runFunction $ ffi "console.error('failed to load function')"
+  _ <- element sideBarContainer #+ renderSidebar prelude
+
+  return ()
+
+resetEditorAndRenderFunction :: Window -> Element -> String -> Type -> TypedValue -> UI ()
+resetEditorAndRenderFunction window functionEditor defName defType valueDefinition = do
+  runFunction $ ffi $ "console.log('render function: " ++ show valueDefinition ++ "')"
+  resetEditor functionEditor
+  runFunction $ ffi $ "console.log('got value " ++ show valueDefinition ++ "')"
+  let functionElement = generateValueDefinitionElement defName defType valueDefinition
+  _ <- element functionEditor #+ [functionElement]
+  registerFunctionDroppedEvents window functionEditor defName defType valueDefinition
+  return ()
 
 resetEditor :: Element -> UI ()
 resetEditor functionEditor = do
   _ <- element functionEditor # set children []
   return ()
 
-registerFunctionDroppedEvents :: Window -> Element -> TypedValue -> UI ()
-registerFunctionDroppedEvents window functionEditor typedValue = do
+registerFunctionDroppedEvents :: Window -> Element -> String -> Type -> TypedValue -> UI ()
+registerFunctionDroppedEvents window functionEditor defName defType typedValue = do
   let typeHoles = getTypeHolesFromValue typedValue
   runFunction $ ffi $ "console.log('found " ++ show (length typeHoles) ++ " type holes')"
-  maybeEvents <- getFunctionDroppedEvents window typeHoles
-  case maybeEvents of
-    Just events -> do
-      mapM_ (registerFunctionDroppedEvent window functionEditor typedValue) events
-    Nothing -> do
-      return ()
+  events <- getFunctionDroppedEvents window typeHoles
+  if not (null events)
+    then do
+      runFunction $ ffi $ "console.log('got " ++ show (length events) ++ " events')"
+      mapM_ (registerFunctionDroppedEvent window functionEditor defName defType typedValue) events
+    else do
+      unless (null typeHoles) $ runFunction $ ffi "console.error('failed to define drop events')"
 
-registerFunctionDroppedEvent :: Window -> Element -> TypedValue -> Event FunctionDroppedEvent -> UI ()
-registerFunctionDroppedEvent window functionEditor typedValue event = do
+registerFunctionDroppedEvent :: Window -> Element -> String -> Type -> TypedValue -> Event FunctionDroppedEvent -> UI ()
+registerFunctionDroppedEvent window functionEditor defName defType valueDefinition event = do
   _ <- onEvent event $ \dropEvent -> do
-    -- replaceTypeHoleWithFunction (show $ referenceId $ definitionReference definition) (functionDragData dropEvent) (functionDropTargetId dropEvent)
-    resetEditorAndRenderFunction window functionEditor "id4"
+    runFunction $ ffi "console.log('dropped value')"
+    updateResult <- replaceTypeHoleWithTypedValue (functionDragData dropEvent) (functionDropTargetId dropEvent) valueDefinition
+    case updateResult of
+      UpdateSuccess updatedValueDefinition -> do
+        resetEditorAndRenderFunction window functionEditor defName defType updatedValueDefinition
+      UpdateError e -> do
+        runFunction $ ffi $ "console.error('Failed to update function: " ++ e ++ ")"
     return ()
   return ()
 
-renderSidebar :: [ValueDefinition] -> [UI Element]
+renderSidebar :: [TypedValue] -> [UI Element]
 renderSidebar = map renderSidebarFunctionBlock
 
-renderSidebarFunctionBlock :: ValueDefinition -> UI Element
-renderSidebarFunctionBlock definition =
-  UI.div
-    # set UI.text (definitionName definition)
-    #. "sidebar-function-block"
-    # set UI.draggable True
-    # set UI.dragData (definitionName definition)
+renderSidebarFunctionBlock :: TypedValue -> UI Element
+renderSidebarFunctionBlock (TypedReference refType refName _) = do
+  preludeFunctionElement <- UI.div #. "prelude-function"
+                                   # set UI.draggable True
+                                   # set UI.dragData refName
+  _ <- element preludeFunctionElement #+ [UI.p # set UI.text refName]
+  preludeFunctionTypeElement <- UI.p # set UI.text (show refType)
+                                     #. "function-type"
+  _ <- element preludeFunctionElement #+ [element preludeFunctionTypeElement]
+  return preludeFunctionElement
+renderSidebarFunctionBlock _ = UI.div # set UI.text "Unsupported prelude value"
+
 
 createAppContainer :: UI Element
 createAppContainer = UI.new # set UI.id_ "visual-fp-application-container"
@@ -100,4 +117,4 @@ createFunctionEditorContainer :: UI Element
 createFunctionEditorContainer = UI.new # set UI.id_ "function-editor-container"
 
 infer :: UntypedValue -> InferenceResult
-infer untyped = Success (TypedLambda "String -> Int -> String" ("String", "s") (TypedReference "String -> Int -> String" "functionTwo" [TypedReference "String" "s" [], TypedTypeHole "Int" "127"]))
+infer untyped = Success (TypedLambda (Function (Primitive "String") (Function (Primitive "Int") (Primitive "String"))) (Primitive "String", "s") (TypedReference (Function (Primitive "String") (Function (Primitive "Int") (Primitive "String"))) "functionTwo" [TypedReference (Primitive "String") "s" [], TypedTypeHole (Primitive "Int") "127"]))
