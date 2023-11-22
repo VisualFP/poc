@@ -14,9 +14,6 @@ import VFP.Inference.InputModel (InputType(InputUnknownType))
 import Control.Monad (foldM)
 import Data.List
 
-import Debug.Trace
-
-
 buildInputTree ::  UI.UntypedValue -> State Int I.InputExpression
 buildInputTree e = do 
     case e of
@@ -86,7 +83,7 @@ buildOutputTree ex = case ex of
 infere :: UI.UntypedValue -> UI.InferenceResult
 infere untyped =
     let input = evalState (buildInputTree untyped) 1
-        (elaboratedExpression, typeConstraints) = trace (show input) $ elaboration input
+        (elaboratedExpression, typeConstraints) = elaboration input
         unifcationResult = unification typeConstraints
         zonked = zonking elaboratedExpression unifcationResult
     in case zonked of
