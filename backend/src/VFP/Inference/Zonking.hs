@@ -7,7 +7,8 @@ import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
 data InferedType = InferedConstantType String
-                 | InferedConstructedType String [InferedType]
+                 | InferedTupleType InferedType InferedType
+                 | InferedFunctionType InferedType InferedType
                  deriving (Eq)
 
 data InferedExpression = InferedConstant String InferedType
@@ -18,7 +19,8 @@ data InferedExpression = InferedConstant String InferedType
 
 instance Show InferedType where
     show (InferedConstantType name) = name
-    show (InferedConstructedType name types) = name ++ "," ++ intercalate "," (map show types)
+    show (InferedTupleType l r) = "(" ++ show l ++ "," ++ show r ++ ")"
+    show (InferedFunctionType from to) = show from ++ " -> " ++ show to
 
 instance Show InferedExpression where
     show (InferedConstant name t) = "(" ++ name ++ ":" ++ show t ++ ")"
@@ -48,7 +50,9 @@ zonking expr (residuals, types) = if not $ Set.null residuals then Left "Express
         resolveType (UnificationVariable var) = case Map.lookup (UnificationVariable var) types of
             Nothing -> error $ "variable " ++ show var ++ " not resolved"
             Just x -> resolveType x
-        resolveType (UnificationConstructedType name ts) = InferedConstructedType name $ map resolveType ts
+        resolveType (UnificationConstructedType "(,)" [l, r]) = InferedTupleType (resolveType l) (resolveType r)
+        resolveType (UnificationConstructedType "->" [from, to]) = InferedFunctionType (resolveType from) (resolveType to)
+        resolveType (UnificationConstructedType _ _) = error "Constructed Type not supported"
         resolveType (UnificationConstantType name) = InferedConstantType name
 
 
