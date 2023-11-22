@@ -12,6 +12,9 @@ string = Primitive "string"
 one :: TypedValue
 one = TypedReference int "1" [] 
 
+testString :: TypedValue
+testString = TypedReference string "test" [] 
+
 two :: TypedValue
 two = TypedReference int "2" [] 
 
@@ -22,4 +25,4 @@ intToString :: TypedValue
 intToString = TypedReference (Function int string) "intToString" [] 
 
 prelude :: [TypedValue]
-prelude = [one, two, plus, intToString]
+prelude = [one, two, plus, testString, intToString]

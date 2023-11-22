@@ -3,18 +3,10 @@ module VFP.Frontend where
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
 import VFP.FunctionEditor (FunctionDroppedEvent (..), generateValueDefinitionElement, getFunctionDroppedEvents, getTypeHolesFromValue, replaceTypeHoleWithTypedValue, ValueDefinitionUpdateResult (..))
-import VFP.UI.Functions (lookupFunction)
-import VFP.UI.UIModel
-  ( InferenceResult (Error, Success),
-    Type (Function, Primitive),
-    TypedValue (TypedLambda, TypedReference, TypedTypeHole),
-    UntypedValue,
-    ValueDefinition (definitionName, definitionType, definitionValue),
-  )
-import VFP.Translation.WellKnown (prelude)
 import Control.Monad (unless)
+import VFP.UI.UIModel
+import qualified VFP.Translation.WellKnown as WellKnown
 
--- import VFP.Translation.InferenceTranslation (infere)
 
 start :: Int -> String -> IO ()
 start port dir = startGUI
@@ -37,17 +29,8 @@ setup window = do
   _ <- element appContainer #+ [element sideBarContainer, element functionEditorContainer]
   _ <- getBody window #+ [element appContainer]
 
-  case lookupFunction "id4" of
-    Just valueDefinition -> do
-      let inferenceResult = infer (definitionValue valueDefinition)
-      case inferenceResult of
-        Success typedValue -> do
-          resetEditorAndRenderFunction window functionEditorContainer (definitionName valueDefinition) (definitionType valueDefinition) typedValue
-        Error e -> do
-          runFunction $ ffi $ "console.error('" ++ e ++ "')"
-    Nothing -> do
-      runFunction $ ffi "console.error('failed to load function')"
-  _ <- element sideBarContainer #+ renderSidebar prelude
+  resetEditorAndRenderFunction window functionEditorContainer "test" WellKnown.string $ TypedTypeHole WellKnown.string "0"
+  _ <- element sideBarContainer #+ renderSidebar WellKnown.prelude
 
   return ()
 
@@ -115,6 +98,3 @@ createSideBarContainer = UI.new # set UI.id_ "visual-fp-sidebar"
 
 createFunctionEditorContainer :: UI Element
 createFunctionEditorContainer = UI.new # set UI.id_ "function-editor-container"
-
-infer :: UntypedValue -> InferenceResult
-infer untyped = Success (TypedLambda (Function (Primitive "String") (Function (Primitive "Int") (Primitive "String"))) (Primitive "String", "s") (TypedReference (Function (Primitive "String") (Function (Primitive "Int") (Primitive "String"))) "functionTwo" [TypedReference (Primitive "String") "s" [], TypedTypeHole (Primitive "Int") "127"]))

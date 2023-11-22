@@ -18,10 +18,11 @@ data TypedValue = TypedTypeHole Type Identifier -- Identifier = Increasing, inko
                 deriving Show
 
 --                      TypeHole      FilledArgs
-data UntypedArguments = ToFill Type | ArgumentList [UntypedValue]
+data UntypedArguments = ToFill Type | ArgumentList [UntypedValue] deriving Show
 
 data UntypedValue = TypeHole
                   | Lambda Identifier UntypedValue
                   | Reference (Maybe Type) Identifier UntypedArguments
+                  deriving Show
 
-data InferenceResult = Error String | Success TypedValue
+data InferenceResult = Error String | Success TypedValue deriving Show

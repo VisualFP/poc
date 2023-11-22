@@ -6,7 +6,7 @@ import Graphics.UI.Threepenny.Core
 import VFP.UI.UIModel ( Identifier, Type (..), TypedValue(..), TypedValue(TypedReference), UntypedValue (Reference, Lambda, TypeHole), UntypedArguments (ArgumentList, ToFill), InferenceResult (Success, Error) )
 import Data.Foldable (find)
 import VFP.Translation.WellKnown (prelude)
---import VFP.Translation.InferenceTranslation (infere)
+import VFP.Translation.InferenceTranslation (infere)
 
 data FunctionDroppedEvent = FunctionDroppedEvent
   { functionDropTargetId :: String,
@@ -102,9 +102,10 @@ replaceTypeHoleWithTypedValue droppedFunctionName targetTypeHoleId definedValue 
   let maybeTypedPreludeValue = getTypedValueFromPrelude droppedFunctionName
   case maybeTypedPreludeValue of
     Just typedPreludeValue -> do
-      let untypedValue = insertTypedValueIntoTypeHole typedPreludeValue targetTypeHoleId typedPreludeValue
-      --let inferenceResult = infere untypedValue
-      let inferenceResult = infer untypedValue
+      let untypedValue = insertTypedValueIntoTypeHole typedPreludeValue targetTypeHoleId definedValue
+      runFunction $ ffi $ "console.log('toinfer " ++ show untypedValue ++ "')"
+      let inferenceResult = infere untypedValue
+      runFunction $ ffi $ "console.log('infered " ++ show inferenceResult ++ "')"
       case inferenceResult of
         Success updatedValue -> return $ UpdateSuccess updatedValue
         Error e -> return $ UpdateError e
@@ -126,9 +127,6 @@ insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole typeH
   if typeHoleId == targetTypeHoleId
     then do
       case valueToInsert of
-        TypedReference typeToInsert identifiertToInsert _ -> Reference (Just typeHoleType) identifiertToInsert (ToFill typeToInsert)
+        TypedReference typeToInsert identifiertToInsert _ -> Reference (Just typeToInsert) identifiertToInsert (ToFill typeHoleType)
         _ -> TypeHole
   else TypeHole
-
-infer :: UntypedValue -> InferenceResult
-infer _ = Success (TypedLambda (Function (Primitive "String") (Function (Primitive "Int") (Primitive "String"))) (Primitive "String", "s") (TypedReference (Function (Primitive "String") (Function (Primitive "Int") (Primitive "String"))) "functionTwo" [TypedReference (Primitive "String") "s" [], TypedReference (Primitive "Int") "1" []]))
