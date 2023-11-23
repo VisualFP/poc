@@ -35,10 +35,13 @@ buildInputTree e = do
                     if inputCardinality <= toFillCardinality then return constant
                     else do
                         let nums = [1..inputCardinality - toFillCardinality ]
-                        foldM (\inner _ -> do
+                        applied <- foldM (\inner _ -> do
                             th <- getNextTypeHole
                             return $ I.InputApplication I.InputUnknownType inner th)
                             constant nums
+                        case applied of
+                            I.InputApplication _ inner th -> return $ I.InputApplication (uiToInputType (Just toFill)) inner th
+                            _ -> return applied
     where
         countInputCardinality :: I.InputType -> Int
         countInputCardinality (I.InputFunction from to) = 1 + countInputCardinality to
@@ -69,7 +72,7 @@ buildOutputTree ex = case ex of
         let uiFunc = buildOutputTree func
             uiArg = buildOutputTree arg in
         case uiFunc of
-            UI.TypedReference rTyp rName rArgs -> UI.TypedReference rTyp rName $ uiArg:rArgs
+            UI.TypedReference rTyp rName rArgs -> UI.TypedReference rTyp rName $ rArgs ++ [uiArg]
             _ -> error "Can only apply to references"
     O.InferedLambda (paramName, paramType) inner typ ->
         UI.TypedLambda (inferedToUIType typ) (inferedToUIType paramType, paramName) $ buildOutputTree inner

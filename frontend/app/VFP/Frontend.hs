@@ -12,7 +12,8 @@ start :: Int -> String -> IO ()
 start port dir = startGUI
   defaultConfig
     { jsPort = Just port,
-      jsStatic = Just $ dir ++ "/bin/static"
+      --jsStatic = Just $ dir ++ "/bin/static"
+      jsStatic = Just dir
     }
   $ \window -> do
     _ <- return window # set UI.title "VisualFP"
