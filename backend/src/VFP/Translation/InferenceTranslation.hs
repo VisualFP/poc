@@ -12,10 +12,10 @@ import VFP.Inference.Zonking (zonking)
 import Control.Monad.State.Lazy
 import VFP.Inference.InputModel (InputType(InputUnknownType))
 import Control.Monad (foldM)
-
+import Data.List
 
 buildInputTree ::  UI.UntypedValue -> State Int I.InputExpression
-buildInputTree e = do
+buildInputTree e = do 
     case e of
         UI.TypeHole -> getNextTypeHole
         UI.Lambda name inner -> do
@@ -34,7 +34,7 @@ buildInputTree e = do
                         toFillCardinality = countUICardinality toFill in
                     if inputCardinality <= toFillCardinality then return constant
                     else do
-                        let nums = [1..toFillCardinality - inputCardinality]
+                        let nums = [1..inputCardinality - toFillCardinality ]
                         foldM (\inner _ -> do
                             th <- getNextTypeHole
                             return $ I.InputApplication I.InputUnknownType inner th)
@@ -62,7 +62,9 @@ buildInputTree e = do
 
 buildOutputTree :: O.InferedExpression -> UI.TypedValue
 buildOutputTree ex = case ex of
-    O.InferedConstant name typ -> UI.TypedReference (inferedToUIType typ) name []
+    O.InferedConstant name typ ->
+        if isPrefixOf "TH" name then UI.TypedTypeHole (inferedToUIType typ) name
+        else UI.TypedReference (inferedToUIType typ) name []
     O.InferedApplication func arg typ ->
         let uiFunc = buildOutputTree func
             uiArg = buildOutputTree arg in
