@@ -5,15 +5,15 @@ import Data.Char
 type Identifier = String
 data Type = Primitive String
           | Generic Int
+          | List Type
           | Function Type Type deriving Eq
 
 instance Show Type where
     show (Primitive name) = name
     show (Generic num) = [chr (ord 'a' - 1 + num)]
-    show (Function from to) = show from ++ " -> " ++ show to
-
--- The root value is always a string for now
-data ValueDefinition = ValueDefinition { definitionType :: Type, definitionName :: Identifier, definitionValue :: UntypedValue }
+    show (List inner) = "[" ++ show inner ++ "]"
+    show (Function (Function fromFrom fromTo) to) = "(" ++ show (Function fromFrom fromTo) ++ ")" ++ " → " ++ show to
+    show (Function from to) = show from ++ " → " ++ show to
 
 data TypedValue = TypedTypeHole Type Identifier -- Identifier = Increasing, inkonsistent number
                 | TypedLambda Type (Type, Identifier) TypedValue

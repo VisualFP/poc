@@ -8,6 +8,8 @@ import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
 import Control.Monad.State.Lazy
 
+import Debug.Trace
+
 data ElaboratedExpression = ElaboratedConstant UnificationType String
                           | ElaboratedTuple UnificationType ElaboratedExpression ElaboratedExpression
                           | ElaboratedApplication UnificationType ElaboratedExpression ElaboratedExpression
@@ -20,6 +22,9 @@ unificationFunctionType from to = UnificationConstructedType "->" [from, to]
 
 unificationTupleType :: UnificationType -> UnificationType -> UnificationType
 unificationTupleType l r = UnificationConstructedType "(,)" [l, r]
+
+unificationListType :: UnificationType -> UnificationType
+unificationListType i = UnificationConstructedType "[]" [i]
 
 data ElaborationStateValue = ElaborationState {
     variableCounter :: Int,
@@ -71,7 +76,8 @@ getOrCreateGeneric num = do
         Just typ -> return typ
         Nothing -> do
             typ <- getNextVariable
-            put $ s{generics = Map.insert num typ current }
+            _s <- get
+            put $ _s{generics = Map.insert num typ current }
             return typ
 
 getNextTypeHoleName :: ElaborationState String
@@ -93,14 +99,15 @@ addElaboratedConstraint c = do s <- get ; put s{constraints = Set.insert c $ con
 
 inputToUnificationType :: InputType -> ElaborationState UnificationType
 inputToUnificationType input = do 
-        result <- inputToUnificationType input
+        result <- _inputToUnificationType input
         resetGenerics
         return result
     where
         _inputToUnificationType :: InputType -> ElaborationState UnificationType
         _inputToUnificationType i = case i of
             InputPrimitive name -> return $ UnificationConstantType name
-            InputGeneric num -> getOrCreateGeneric num
+            InputGeneric num -> do
+                getOrCreateGeneric num
             InputUnknownType -> getNextVariable
             InputTupleType inputL inputR -> do
                 elaboratedL <- _inputToUnificationType inputL
@@ -110,12 +117,19 @@ inputToUnificationType input = do
                 elaboratedArg <- _inputToUnificationType inputArg
                 elaboratedRet <- _inputToUnificationType inputRet
                 return $ unificationFunctionType elaboratedArg elaboratedRet
+            InputList inner -> do
+                elaboratedInner <- _inputToUnificationType inner
+                return $ unificationListType elaboratedInner
 
 elaborate :: InputExpression -> UnificationType -> ElaborationState ElaboratedExpression
 elaborate input toFill = do
     unificationType <- inputToUnificationType $ getInputType input
     addElaboratedConstraint (toFill, unificationType)
     case input of
+        InputValueDefinition definedType inner -> do
+            unificationDefinedType <- inputToUnificationType definedType
+            addElaboratedConstraint (toFill, unificationDefinedType)
+            elaborate inner toFill
         InputTypeHole _ -> do
             typeHoleName <- getNextTypeHoleName
             let elaboratedExpression = ElaboratedTypeHole toFill typeHoleName

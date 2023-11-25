@@ -11,6 +11,9 @@ string = Primitive "string"
 identity :: TypedValue
 identity = TypedReference (Function (Generic 1) (Generic 1)) "identity" []
 
+fold :: TypedValue
+fold = TypedReference (Function (Function (Generic 1) (Function (Generic 2) (Generic 2))) (Function (Generic 2) (Function (List $ Generic 1) (Generic 2)))) "fold" []
+
 one :: TypedValue
 one = TypedReference int "1" [] 
 
@@ -26,5 +29,11 @@ plus = TypedReference (Function int (Function int int)) "plus" []
 intToString :: TypedValue
 intToString = TypedReference (Function int string) "intToString" [] 
 
+nil :: TypedValue
+nil = TypedReference (List $ Generic 1) "nil" []
+
+cons :: TypedValue
+cons = TypedReference (Function (Generic 1) (Function (List (Generic 1)) (List (Generic 1)))) "cons" []
+
 prelude :: [TypedValue]
-prelude = [identity, one, two, plus, testString, intToString]
+prelude = [identity, fold, one, two, plus, testString, intToString, cons, nil]

@@ -11,6 +11,8 @@ import VFP.Inference.Zonking (zonking)
 import Control.Monad.State.Lazy
 import Control.Monad (foldM)
 
+import Debug.Trace
+
 buildInputTree ::  UI.UntypedValue -> State Int I.InputExpression
 buildInputTree e = do 
     case e of
@@ -26,18 +28,20 @@ buildInputTree e = do
                         argInput <- buildInputTree arg
                         return $ I.InputApplication I.InputUnknownType inner argInput)
                         constant _args
-                UI.ToFill toFill ->
+                UI.ToFill toFill -> do
                     let inputCardinality = countInputCardinality $ uiToInputType typ
-                        toFillCardinality = countUICardinality toFill in
-                    if inputCardinality <= toFillCardinality then return constant
-                    else do
-                        let nums = [1..inputCardinality - toFillCardinality ]
-                        applied <- foldM (\inner _ -> do
-                            return $ I.InputApplication I.InputUnknownType inner $ I.InputTypeHole I.InputUnknownType)
-                            constant nums
-                        case applied of
-                            I.InputApplication _ inner th -> return $ I.InputApplication (uiToInputType (Just toFill)) inner th
-                            _ -> return applied
+                        toFillCardinality = countUICardinality toFill
+                    inner <- if inputCardinality <= toFillCardinality
+                        then return constant
+                        else do
+                            let nums = [1..inputCardinality - toFillCardinality ]
+                            applied <- foldM (\inner _ -> do
+                                return $ I.InputApplication I.InputUnknownType inner $ I.InputTypeHole I.InputUnknownType)
+                                constant nums
+                            case applied of
+                                I.InputApplication _ inner th -> return $ I.InputApplication (uiToInputType (Just toFill)) inner th
+                                _ -> return applied
+                    return $ I.InputValueDefinition (uiToInputType $ Just toFill) inner
     where
         countInputCardinality :: I.InputType -> Int
         countInputCardinality (I.InputFunction _ to) = 1 + countInputCardinality to
@@ -50,6 +54,7 @@ buildInputTree e = do
         uiToInputType :: Maybe UI.Type -> I.InputType
         uiToInputType (Just (UI.Primitive n)) = I.InputPrimitive n
         uiToInputType (Just (UI.Function from to)) = I.InputFunction (uiToInputType $ Just from) (uiToInputType $ Just to)
+        uiToInputType (Just (UI.List item)) = I.InputList (uiToInputType $ Just item)
         uiToInputType (Just (UI.Generic num)) = I.InputGeneric num
         uiToInputType Nothing = I.InputUnknownType
 
@@ -71,14 +76,15 @@ buildOutputTree ex = case ex of
         inferedToUIType (O.InferedConstantType name) = UI.Primitive name
         inferedToUIType (O.InferedGeneric num) = UI.Generic num
         inferedToUIType (O.InferedFunctionType from to) = UI.Function (inferedToUIType from) (inferedToUIType to)
+        inferedToUIType (O.InferedListType item) = UI.List (inferedToUIType item)
         inferedToUIType (O.InferedTupleType _ _) = error "Tuples are not supported in the UI model"
 
 infere :: UI.UntypedValue -> UI.InferenceResult
 infere untyped =
-    let input = evalState (buildInputTree untyped) 1
-        (elaboratedExpression, typeConstraints) = elaboration input
-        unifcationResult = unification typeConstraints
-        zonked = zonking elaboratedExpression unifcationResult
-    in case zonked of
+    let input = evalState (buildInputTree (trace ("Untyped" ++ show untyped) untyped)) 1
+        (elaboratedExpression, typeConstraints) = trace ("Input: " ++ show input) $ elaboration input
+        unifcationResult = unification $ trace ("TypeConstraints: " ++ show typeConstraints) typeConstraints
+        zonked = zonking (trace ("ElaboratedExpression: " ++ show elaboratedExpression) elaboratedExpression) unifcationResult
+    in case trace ("Zonked: " ++ show zonked) zonked of
         Left e -> UI.Error e
         Right r -> UI.Success $ buildOutputTree r
