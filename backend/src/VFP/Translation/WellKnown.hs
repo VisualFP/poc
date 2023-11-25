@@ -12,7 +12,7 @@ one :: TypedValue
 one = TypedReference int "1" [] 
 
 testString :: TypedValue
-testString = TypedReference string "test" [] 
+testString = TypedReference string "\"test\"" [] 
 
 two :: TypedValue
 two = TypedReference int "2" [] 

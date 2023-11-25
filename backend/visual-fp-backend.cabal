@@ -8,7 +8,6 @@ copyright:          2023 Lukas Streckeisen & Jann Flepp
 library
     exposed-modules:
         VFP.UI.UIModel,
-        VFP.UI.Functions,
         VFP.Translation.InferenceTranslation,
         VFP.Translation.WellKnown,
         VFP.Inference.Elaboration,
