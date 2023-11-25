@@ -4,6 +4,7 @@ data InputType = InputPrimitive String
                | InputUnknownType
                | InputFunction InputType InputType
                | InputTupleType InputType InputType
+               | InputGeneric Int -- Counter inside type to re-use
                deriving (Show, Eq) 
 
 data InputExpression = InputApplication InputType InputExpression InputExpression 

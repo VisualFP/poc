@@ -1,10 +1,15 @@
 module VFP.UI.UIModel where
 
+import Data.Char
+
 type Identifier = String
-data Type = Primitive String | Function Type Type deriving Eq
+data Type = Primitive String
+          | Generic Int
+          | Function Type Type deriving Eq
 
 instance Show Type where
     show (Primitive name) = name
+    show (Generic num) = [chr (ord 'a' - 1 + num)]
     show (Function from to) = show from ++ " -> " ++ show to
 
 -- The root value is always a string for now

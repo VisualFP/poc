@@ -50,6 +50,7 @@ buildInputTree e = do
         uiToInputType :: Maybe UI.Type -> I.InputType
         uiToInputType (Just (UI.Primitive n)) = I.InputPrimitive n
         uiToInputType (Just (UI.Function from to)) = I.InputFunction (uiToInputType $ Just from) (uiToInputType $ Just to)
+        uiToInputType (Just (UI.Generic num)) = I.InputGeneric num
         uiToInputType Nothing = I.InputUnknownType
 
 buildOutputTree :: O.InferedExpression -> UI.TypedValue
@@ -68,6 +69,7 @@ buildOutputTree ex = case ex of
     where
         inferedToUIType :: O.InferedType -> UI.Type
         inferedToUIType (O.InferedConstantType name) = UI.Primitive name
+        inferedToUIType (O.InferedGeneric num) = UI.Generic num
         inferedToUIType (O.InferedFunctionType from to) = UI.Function (inferedToUIType from) (inferedToUIType to)
         inferedToUIType (O.InferedTupleType _ _) = error "Tuples are not supported in the UI model"
 

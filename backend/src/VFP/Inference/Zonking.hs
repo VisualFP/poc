@@ -8,6 +8,7 @@ import qualified Data.Set as Set
 data InferedType = InferedConstantType String
                  | InferedTupleType InferedType InferedType
                  | InferedFunctionType InferedType InferedType
+                 | InferedGeneric Int 
                  deriving (Eq)
 
 data InferedExpression = InferedConstant String InferedType
@@ -19,6 +20,7 @@ data InferedExpression = InferedConstant String InferedType
 
 instance Show InferedType where
     show (InferedConstantType name) = name
+    show (InferedGeneric num) = show num
     show (InferedTupleType l r) = "(" ++ show l ++ "," ++ show r ++ ")"
     show (InferedFunctionType from to) = show from ++ " -> " ++ show to
 
