@@ -10,6 +10,7 @@ data InputExpression = InputApplication InputType InputExpression InputExpressio
                      | InputConstant InputType String 
                      | InputTuple InputType InputExpression InputExpression 
                      | InputLambda InputType String InputExpression
+                     | InputTypeHole InputType
                      deriving (Show, Eq) 
 
 getInputType :: InputExpression -> InputType 
@@ -17,3 +18,4 @@ getInputType (InputApplication typ _ _) = typ
 getInputType (InputConstant typ _) = typ
 getInputType (InputTuple typ _ _) = typ
 getInputType (InputLambda typ _ _) = typ
+getInputType (InputTypeHole typ) = typ

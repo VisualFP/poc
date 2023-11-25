@@ -1,6 +1,5 @@
 module VFP.Translation.WellKnown where
 
-import qualified Data.Map as Map
 import VFP.UI.UIModel
 
 int :: Type

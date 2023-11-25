@@ -12,6 +12,7 @@ data ElaboratedExpression = ElaboratedConstant UnificationType String
                           | ElaboratedTuple UnificationType ElaboratedExpression ElaboratedExpression 
                           | ElaboratedApplication UnificationType ElaboratedExpression ElaboratedExpression 
                           | ElaboratedLambda UnificationType (String, UnificationType) ElaboratedExpression 
+                          | ElaboratedTypeHole UnificationType String 
                           deriving Show
 
 unificationFunctionType :: UnificationType -> UnificationType -> UnificationType
@@ -20,7 +21,7 @@ unificationFunctionType from to = UnificationConstructedType "->" [from, to]
 unificationTupleType :: UnificationType -> UnificationType -> UnificationType
 unificationTupleType l r = UnificationConstructedType "(,)" [l, r]
 
-data ElaborationStateValue = ElaborationState {variableCounter :: Int, constraints :: TypeConstraintConjunction, variablesToReuse :: Map.Map String UnificationType} deriving Show
+data ElaborationStateValue = ElaborationState {variableCounter :: Int, typeHoleCounter :: Int, constraints :: TypeConstraintConjunction, variablesToReuse :: Map.Map String UnificationType} deriving Show
 type ElaborationState = State ElaborationStateValue
 
 addVariableToReuse :: String -> UnificationType -> ElaborationState ()
@@ -43,7 +44,7 @@ addVariableToResuseForSubtree name typ action = do
     return r
 
 initialElaborationStateValue :: ElaborationStateValue
-initialElaborationStateValue = ElaborationState{variableCounter = 0, constraints = Set.empty, variablesToReuse = Map.empty}
+initialElaborationStateValue = ElaborationState{variableCounter = 0, typeHoleCounter = 0, constraints = Set.empty, variablesToReuse = Map.empty}
 
 setupVariableReuse :: String -> UnificationType -> ElaborationState ()
 setupVariableReuse name typ = do
@@ -51,6 +52,13 @@ setupVariableReuse name typ = do
     case existing of
         Nothing -> addVariableToReuse name typ
         Just e -> addElaboratedConstraint (typ, e) 
+
+getNextTypeHoleName :: ElaborationState String
+getNextTypeHoleName = do
+    s <- get
+    let currentCounter = typeHoleCounter s
+    put $ s{typeHoleCounter = currentCounter + 1}
+    return $ "?" ++ show currentCounter
 
 getNextVariable :: ElaborationState UnificationType
 getNextVariable = do
@@ -79,6 +87,10 @@ elaborate input toFill = do
     unificationType <- inputToUnificationType $ getInputType input
     addElaboratedConstraint (toFill, unificationType)
     case input of
+        InputTypeHole _ -> do
+            typeHoleName <- getNextTypeHoleName
+            let elaboratedExpression = ElaboratedTypeHole toFill typeHoleName 
+            return elaboratedExpression
         InputConstant _ name -> do
             setupVariableReuse name toFill
             let elaboratedExpression = ElaboratedConstant toFill name 

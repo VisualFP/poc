@@ -1,12 +1,10 @@
 module VFP.UI.UIModel where
-import qualified Data.Map.Strict as Map
 
 type Identifier = String
-data Type = Primitive String | UnknownType | Function Type Type deriving Eq
+data Type = Primitive String | Function Type Type deriving Eq
 
 instance Show Type where
     show (Primitive name) = name
-    show UnknownType = "None"
     show (Function from to) = show from ++ " -> " ++ show to
 
 -- The root value is always a string for now
