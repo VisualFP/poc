@@ -8,8 +8,6 @@ import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
 import Control.Monad.State.Lazy
 
-import Debug.Trace
-
 data ElaboratedExpression = ElaboratedConstant UnificationType String
                           | ElaboratedTuple UnificationType ElaboratedExpression ElaboratedExpression
                           | ElaboratedApplication UnificationType ElaboratedExpression ElaboratedExpression

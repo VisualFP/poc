@@ -119,6 +119,16 @@ lambdaWrongReturnTypeTest = TestLabel "lambdaWrongReturnTypeTest" $ TestCase $
         result = runPipeline input
     in assertInferenceError result
 
+lambdaCrossReferenceTest :: Test
+lambdaCrossReferenceTest = TestLabel "lambdaCrossReferenceTest" $ TestCase $
+    let input =  InputApplication inputInt
+            (InputApplication inputUnknownType
+                (InputConstant (InputFunction (InputFunction inputUnknownType inputUnknownType) inputUnknownType) "a")
+                (InputLambda (InputFunction inputInt inputInt) "v" $ InputConstant inputInt "v"))
+            (InputConstant inputUnknownType "v")
+        result = runPipeline input
+    in assertInferenceError result
+
 integrationTests :: Test
 integrationTests = TestLabel "IntegrationTests" $ TestList [
     simpleAdditionTest,
@@ -128,4 +138,5 @@ integrationTests = TestLabel "IntegrationTests" $ TestList [
     variableReuseTest,
     simpleLambdaTest,
     lambdaArgumentInferenceTest,
-    lambdaWrongReturnTypeTest ]
+    lambdaWrongReturnTypeTest,
+    lambdaCrossReferenceTest ]

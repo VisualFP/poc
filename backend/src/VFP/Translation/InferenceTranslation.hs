@@ -11,8 +11,6 @@ import VFP.Inference.Zonking (zonking)
 import Control.Monad.State.Lazy
 import Control.Monad (foldM)
 
-import Debug.Trace
-
 buildInputTree ::  UI.UntypedValue -> State Int I.InputExpression
 buildInputTree e = do 
     case e of
@@ -81,10 +79,10 @@ buildOutputTree ex = case ex of
 
 infere :: UI.UntypedValue -> UI.InferenceResult
 infere untyped =
-    let input = evalState (buildInputTree (trace ("Untyped" ++ show untyped) untyped)) 1
-        (elaboratedExpression, typeConstraints) = trace ("Input: " ++ show input) $ elaboration input
-        unifcationResult = unification $ trace ("TypeConstraints: " ++ show typeConstraints) typeConstraints
-        zonked = zonking (trace ("ElaboratedExpression: " ++ show elaboratedExpression) elaboratedExpression) unifcationResult
-    in case trace ("Zonked: " ++ show zonked) zonked of
+    let input = evalState (buildInputTree untyped) 1
+        (elaboratedExpression, typeConstraints) = elaboration input
+        unifcationResult = unification typeConstraints
+        zonked = zonking elaboratedExpression unifcationResult
+    in case zonked of
         Left e -> UI.Error e
         Right r -> UI.Success $ buildOutputTree r

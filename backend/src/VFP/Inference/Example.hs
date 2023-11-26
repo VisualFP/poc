@@ -15,10 +15,10 @@ inputUnknownType = InputUnknownType
 inputHole1 = InputConstant inputUnknownType "?1" 
 inputHole2 = InputConstant inputUnknownType "?2" 
 
-unifAlpha = UnificationVariable "α"
-unifBeta = UnificationVariable "β"
-unifGamma = UnificationVariable "γ"
-unifDelta = UnificationVariable "δ"
+unifAlpha = UnificationVariable "α" False
+unifBeta = UnificationVariable "β" False
+unifGamma = UnificationVariable "γ" False
+unifDelta = UnificationVariable "δ" False
 unifInt = UnificationConstantType "Int"
 unifBool = UnificationConstantType "Bool"
 unifString = UnificationConstantType "String"

@@ -17,8 +17,6 @@ import Control.Monad.State.Lazy
 import Control.Monad
 import Data.Tuple (swap)
 
-import Debug.Trace
-
 {-
 Unregularities in SPJ slides:
 
@@ -124,10 +122,6 @@ addResolvedType from to = do
             mapConstraints $ Set.map (\(x,y) -> (substituteType from to x, substituteType from to y))
             mapResolvedTypes $ Map.insert from to
 
-{-
-Unification algorithm, as inspired by Metha, PROGRAMMING IN PROLOG UNIFICATION AND PROOF SEARCH, page 11
--}
-
 clearResolveds :: UnificationState ()
 clearResolveds = do
     s <- get
@@ -163,9 +157,6 @@ processConstraint (leftC, rightC) = do
         else case constraint of
             (UnificationConstantType _, UnificationConstantType _) ->
                 when (leftC == rightC) $ deleteConstraint constraint
-            (UnificationVariable _ _, UnificationVariable _ _) -> do
-                deleteConstraint constraint
-                addResolvedType leftC rightC
             (UnificationVariable _ _, _) ->
                 unless (typeContainsVariable rightC) $ do
                     deleteConstraint constraint
