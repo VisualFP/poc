@@ -77,13 +77,13 @@ substituteType from to (UnificationConstructedType tClass other) = UnificationCo
 
 type ResolvedTypes = Map.Map UnificationType UnificationType
 
-data UnificationStateValue = UnificationState { constraints :: TypeConstraintConjunction, resolvedTypes :: ResolvedTypes, deletedConstraints :: TypeConstraintConjunction }
+data UnificationStateValue = UnificationState { constraints :: TypeConstraintConjunction, resolvedTypes :: ResolvedTypes, deletedConstraints :: TypeConstraintConjunction, promotedGenerics :: Int }
     deriving (Eq, Show)
 
 type UnificationState = State UnificationStateValue
 
 initialStateValue :: TypeConstraintConjunction -> UnificationStateValue
-initialStateValue cs = UnificationState{constraints=cs, resolvedTypes = Map.empty, deletedConstraints = Set.empty}
+initialStateValue cs = UnificationState{constraints=cs, resolvedTypes = Map.empty, deletedConstraints = Set.empty, promotedGenerics = 1}
 
 mapConstraints :: (TypeConstraintConjunction -> TypeConstraintConjunction) -> UnificationState ()
 mapConstraints mapping = do
@@ -145,8 +145,11 @@ promoteGeneric = do
         applyPotential :: [UnificationType] -> UnificationState ()
         applyPotential ps = case ps of
             (UnificationVariable name True):_ -> do
+                s <- get
                 let current = UnificationVariable name True
-                    genericType = UnificationConstantType name
+                    promotedNumber = promotedGenerics s
+                    genericType = UnificationConstantType $ "G" ++ show promotedNumber
+                put $ s{promotedGenerics = promotedNumber + 1}
                 mapConstraints $ Set.map (\(x,y) -> (substituteType current genericType x, substituteType current genericType y))
                 mapResolvedTypes $ Map.insert current genericType
             _:rest -> applyPotential rest
