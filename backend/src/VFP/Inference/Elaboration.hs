@@ -126,9 +126,7 @@ elaborate input toFill = do
     unificationType <- inputToUnificationType $ getInputType input
     addElaboratedConstraint (toFill, unificationType)
     case input of
-        InputValueDefinition definedType inner -> do
-            unificationDefinedType <- inputToUnificationType definedType
-            addElaboratedConstraint (toFill, unificationDefinedType)
+        InputValueDefinition _ inner -> do
             elaborate inner toFill
         InputTypeHole _ -> do
             typeHoleName <- getNextTypeHoleName

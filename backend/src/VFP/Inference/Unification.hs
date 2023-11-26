@@ -110,7 +110,7 @@ addResolvedType from to = do
             when (countVariables cur > countVariables to) $ do
                 mapResolvedTypes (Map.delete cur)
                 addGivenResolve
-            
+
             when (typeContainsVariable to && typeContainsVariable cur) $ do
                 addConstraint (to, cur)
     where
@@ -118,7 +118,6 @@ addResolvedType from to = do
         addGivenResolve = do
             mapConstraints $ Set.map (\(x,y) -> (substituteType from to x, substituteType from to y))
             mapResolvedTypes $ Map.insert from to
-            --mapResolvedTypes $ Map.map (substituteType from to)
 
 {-
 Unification algorithm, as inspired by Metha, PROGRAMMING IN PROLOG UNIFICATION AND PROOF SEARCH, page 11
@@ -129,6 +128,7 @@ clearResolveds = do
     cur <- get
     let resolveds = Map.toList $ resolvedTypes cur
     mapM_ (\(from, to) -> mapResolvedTypes $ Map.map (substituteType from to)) resolveds
+    mapM_ (\(from, to) -> mapConstraints $ Set.map (\(x,y) -> (substituteType from to x, substituteType from to y))) resolveds
 
 processConstraint :: TypeConstraint -> UnificationState ()
 processConstraint (leftC, rightC) = do
@@ -139,7 +139,7 @@ processConstraint (leftC, rightC) = do
             (UnificationConstantType _, UnificationConstantType _) ->
                 when (leftC == rightC) $ deleteConstraint constraint
             (UnificationVariable _, _) ->
-                unless (typeIsVariable rightC) $ do
+                unless (typeContainsVariable rightC) $ do
                     deleteConstraint constraint
                     addResolvedType leftC rightC
             (_, UnificationVariable _) -> do
