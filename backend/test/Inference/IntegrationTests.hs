@@ -25,6 +25,7 @@ assertType expected = assertEqual "Assert types Equal" (Just expected)
 
 getTopmostType :: InferenceResult -> Maybe InferedType
 getTopmostType (Right (InferedConstant _ typ)) = Just typ
+getTopmostType (Right (InferedTypeHole _ typ)) = Just typ
 getTopmostType (Right (InferedApplication _ _ typ)) = Just typ
 getTopmostType (Right (InferedTuple _ _ typ)) = Just typ
 getTopmostType (Right (InferedLambda _ _ typ)) = Just typ
@@ -38,6 +39,7 @@ findTypeOfIdentifier expected (Right result) =
         enumerateConstants :: InferedExpression -> [(String, InferedType)]
         enumerateConstants input = case input of
             InferedConstant n t -> [(n, t)]
+            InferedTypeHole n t -> [(n, t)]
             InferedApplication l r _ -> enumerateConstants l ++ enumerateConstants r
             InferedTuple l r _ -> enumerateConstants l ++ enumerateConstants r
             InferedLambda (variableName, variableType) nested _ -> (variableName,variableType) : enumerateConstants nested
@@ -105,8 +107,7 @@ simpleLambdaTest = TestLabel "simpleLambdaTest" $ TestCase $
 
 lambdaArgumentInferenceTest :: Test
 lambdaArgumentInferenceTest = TestLabel "lambdaArgumentInferenceTest" $ TestCase $
-    let input = InputLambda InputUnknownType "a"
-            (InputApplication InputUnknownType (InputApplication InputUnknownType inputPlus (InputConstant InputUnknownType "a")) (InputConstant InputUnknownType "a"))
+    let input = InputLambda InputUnknownType "a" (InputApplication InputUnknownType (InputApplication InputUnknownType inputPlus (InputConstant InputUnknownType "a")) (InputConstant InputUnknownType "a"))
         expected = InferedFunctionType inferedInt inferedInt
         result = runPipeline input
     in assertType expected $ getTopmostType result

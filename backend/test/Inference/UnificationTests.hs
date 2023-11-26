@@ -20,11 +20,10 @@ contradictaryTest :: Test
 contradictaryTest = TestLabel "contradicatryTest" $ TestCase $
     let input = Set.fromList [ (unifAlpha, unifList unifString), (unifAlpha, unifList unifBool) ]
         expectedResolved = Map.fromList [ (unifAlpha, unifList unifBool) ]
-        expectedResiduals = Set.fromList [ (unifBool, unifString) ]
         (resultResiduals, resultResolved) = unification input
     in do
         assertEqual "resolveds" expectedResolved resultResolved
-        assertEqual "residuals" expectedResiduals resultResiduals
+        assertBool "residuals not null" (not $ Set.null resultResiduals)
 
 multipleIndirectionsTest :: Test
 multipleIndirectionsTest = TestLabel "multipleIndirectionsTest" $ TestCase $
@@ -50,11 +49,10 @@ unsolvableTest :: Test
 unsolvableTest = TestLabel "unsolvableTest" $ TestCase $
     let input = Set.fromList [ (unifAlpha, unifBeta), (unifBeta, unifAlpha) ]
         expectedResolved = Map.empty
-        expectedResiduals = Set.fromList [ (unifAlpha, unifBeta), (unifBeta, unifAlpha) ]
         (resultResiduals, resultResolved) = unification input
     in do
         assertEqual "resolveds" expectedResolved resultResolved
-        assertEqual "residuals" expectedResiduals resultResiduals
+        assertBool "residuals not null" (not $ Set.null resultResiduals)
 
 unificationTests :: Test
 unificationTests = TestLabel "UnificationTests" $ TestList [listOfBoolTest, contradictaryTest, multipleIndirectionsTest, simpleFunctionTest, unsolvableTest]

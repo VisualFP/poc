@@ -8,6 +8,8 @@ import qualified Data.Set as Set
 data InferedType = InferedConstantType String
                  | InferedTupleType InferedType InferedType
                  | InferedFunctionType InferedType InferedType
+                 | InferedListType InferedType
+                 | InferedGeneric Int
                  deriving (Eq)
 
 data InferedExpression = InferedConstant String InferedType
@@ -19,7 +21,9 @@ data InferedExpression = InferedConstant String InferedType
 
 instance Show InferedType where
     show (InferedConstantType name) = name
+    show (InferedGeneric num) = show num
     show (InferedTupleType l r) = "(" ++ show l ++ "," ++ show r ++ ")"
+    show (InferedListType i) = "[" ++ show i ++ "]"
     show (InferedFunctionType from to) = show from ++ " -> " ++ show to
 
 instance Show InferedExpression where
@@ -49,10 +53,12 @@ zonking expr (residuals, types) = if not $ Set.null residuals then Left "Express
             Right $ InferedTuple leftType rightType $ resolveType typ
     where
         resolveType :: UnificationType -> InferedType
-        resolveType (UnificationVariable var) = case Map.lookup (UnificationVariable var) types of
+        resolveType (UnificationVariable var isGeneric) = case Map.lookup (UnificationVariable var isGeneric) types of
             Nothing -> error $ "variable " ++ show var ++ " not resolved"
             Just x -> resolveType x
         resolveType (UnificationConstructedType "(,)" [l, r]) = InferedTupleType (resolveType l) (resolveType r)
+        resolveType (UnificationConstructedType "[]" [item]) = InferedListType $ resolveType item
         resolveType (UnificationConstructedType "->" [from, to]) = InferedFunctionType (resolveType from) (resolveType to)
         resolveType (UnificationConstructedType _ _) = error "Constructed Type not supported"
+        resolveType (UnificationConstantType ('G':num)) = InferedGeneric (read num :: Int)
         resolveType (UnificationConstantType name) = InferedConstantType name

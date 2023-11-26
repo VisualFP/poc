@@ -26,18 +26,20 @@ buildInputTree e = do
                         argInput <- buildInputTree arg
                         return $ I.InputApplication I.InputUnknownType inner argInput)
                         constant _args
-                UI.ToFill toFill ->
+                UI.ToFill toFill -> do
                     let inputCardinality = countInputCardinality $ uiToInputType typ
-                        toFillCardinality = countUICardinality toFill in
-                    if inputCardinality <= toFillCardinality then return constant
-                    else do
-                        let nums = [1..inputCardinality - toFillCardinality ]
-                        applied <- foldM (\inner _ -> do
-                            return $ I.InputApplication I.InputUnknownType inner $ I.InputTypeHole I.InputUnknownType)
-                            constant nums
-                        case applied of
-                            I.InputApplication _ inner th -> return $ I.InputApplication (uiToInputType (Just toFill)) inner th
-                            _ -> return applied
+                        toFillCardinality = countUICardinality toFill
+                    inner <- if inputCardinality <= toFillCardinality
+                        then return constant
+                        else do
+                            let nums = [1..inputCardinality - toFillCardinality ]
+                            applied <- foldM (\inner _ -> do
+                                return $ I.InputApplication I.InputUnknownType inner $ I.InputTypeHole I.InputUnknownType)
+                                constant nums
+                            case applied of
+                                I.InputApplication _ inner th -> return $ I.InputApplication (uiToInputType (Just toFill)) inner th
+                                _ -> return applied
+                    return $ I.InputValueDefinition (uiToInputType $ Just toFill) inner
     where
         countInputCardinality :: I.InputType -> Int
         countInputCardinality (I.InputFunction _ to) = 1 + countInputCardinality to
@@ -50,6 +52,8 @@ buildInputTree e = do
         uiToInputType :: Maybe UI.Type -> I.InputType
         uiToInputType (Just (UI.Primitive n)) = I.InputPrimitive n
         uiToInputType (Just (UI.Function from to)) = I.InputFunction (uiToInputType $ Just from) (uiToInputType $ Just to)
+        uiToInputType (Just (UI.List item)) = I.InputList (uiToInputType $ Just item)
+        uiToInputType (Just (UI.Generic num)) = I.InputGeneric num
         uiToInputType Nothing = I.InputUnknownType
 
 buildOutputTree :: O.InferedExpression -> UI.TypedValue
@@ -68,7 +72,9 @@ buildOutputTree ex = case ex of
     where
         inferedToUIType :: O.InferedType -> UI.Type
         inferedToUIType (O.InferedConstantType name) = UI.Primitive name
+        inferedToUIType (O.InferedGeneric num) = UI.Generic num
         inferedToUIType (O.InferedFunctionType from to) = UI.Function (inferedToUIType from) (inferedToUIType to)
+        inferedToUIType (O.InferedListType item) = UI.List (inferedToUIType item)
         inferedToUIType (O.InferedTupleType _ _) = error "Tuples are not supported in the UI model"
 
 infere :: UI.UntypedValue -> UI.InferenceResult
