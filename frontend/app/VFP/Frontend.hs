@@ -12,7 +12,6 @@ start :: Int -> String -> IO ()
 start port dir = startGUI
   defaultConfig
     { jsPort = Just port,
-      --jsStatic = Just $ dir ++ "/bin/static"
       jsStatic = Just dir
     }
   $ \window -> do
