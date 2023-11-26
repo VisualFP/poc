@@ -75,7 +75,7 @@ getOrCreateGeneric num = do
     case Map.lookup num current of
         Just typ -> return typ
         Nothing -> do
-            typ <- getNextVariable
+            typ <- getNextVariable True
             _s <- get
             put $ _s{generics = Map.insert num typ current }
             return typ
@@ -87,12 +87,12 @@ getNextTypeHoleName = do
     put $ s{typeHoleCounter = currentCounter + 1}
     return $ "?" ++ show currentCounter
 
-getNextVariable :: ElaborationState UnificationType
-getNextVariable = do
+getNextVariable :: Bool -> ElaborationState UnificationType
+getNextVariable isGeneric = do
     s <- get
     let currentCounter = variableCounter s
     put $ s{variableCounter = currentCounter + 1}
-    return $ UnificationVariable $ "UV" ++ show currentCounter
+    return $ UnificationVariable ("UV" ++ show currentCounter) isGeneric
 
 addElaboratedConstraint :: TypeConstraint -> ElaborationState ()
 addElaboratedConstraint c = do s <- get ; put s{constraints = Set.insert c $ constraints s}
@@ -108,7 +108,7 @@ inputToUnificationType input = do
             InputPrimitive name -> return $ UnificationConstantType name
             InputGeneric num -> do
                 getOrCreateGeneric num
-            InputUnknownType -> getNextVariable
+            InputUnknownType -> getNextVariable False
             InputTupleType inputL inputR -> do
                 elaboratedL <- _inputToUnificationType inputL
                 elaboratedR <- _inputToUnificationType inputR
@@ -137,24 +137,24 @@ elaborate input toFill = do
             let elaboratedExpression = ElaboratedConstant toFill name
             return elaboratedExpression
         InputTuple _ left right -> do
-            leftType <- getNextVariable
+            leftType <- getNextVariable False
             leftExpression <- elaborate left leftType
-            rightType <- getNextVariable
+            rightType <- getNextVariable False
             rightExpression <- elaborate right rightType
             let elaboratedExpression = ElaboratedTuple toFill leftExpression rightExpression
             addElaboratedConstraint (toFill, unificationTupleType leftType rightType)
             return elaboratedExpression
         InputApplication _ left right -> do
-            leftType <- getNextVariable
+            leftType <- getNextVariable False
             leftExpression <- elaborate left leftType
-            rightType <- getNextVariable
+            rightType <- getNextVariable False
             rightExpression <- elaborate right rightType
             let elaboratedExpression = ElaboratedApplication toFill leftExpression rightExpression
             addElaboratedConstraint (leftType, unificationFunctionType rightType toFill)
             return elaboratedExpression
         InputLambda _ variable nested -> do
-            variableType <- getNextVariable
-            nestedType <- getNextVariable
+            variableType <- getNextVariable False
+            nestedType <- getNextVariable False
             nestedExpression <- addVariableToResuseForSubtree variable variableType $ elaborate nested nestedType
             let elaboratedExpression = ElaboratedLambda toFill (variable, variableType) nestedExpression
             addElaboratedConstraint (toFill, unificationFunctionType variableType nestedType)
@@ -162,7 +162,7 @@ elaborate input toFill = do
 
 runElaboration :: InputExpression -> ElaborationState (ElaboratedExpression, TypeConstraintConjunction)
 runElaboration input = do
-    topVariable <- getNextVariable
+    topVariable <- getNextVariable False
     elaboratedExpression <- elaborate input topVariable
     finalState <- get
     return (elaboratedExpression, constraints finalState)

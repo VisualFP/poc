@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use bimap" #-}
 {-# HLINT ignore "Use <$>" #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module VFP.Inference.Unification(
     UnificationType(..),
@@ -32,13 +33,14 @@ Unregularities in SPJ slides:
    (as well as undecidable)
 -}
 
-data UnificationType = UnificationVariable String
+data UnificationType = UnificationVariable String Bool -- Can be promoted to Generic
                      | UnificationConstantType String
                      | UnificationConstructedType String [UnificationType]
                      deriving (Eq, Ord)
 
 instance Show UnificationType where
-    show (UnificationVariable name) = name
+    show :: UnificationType -> String
+    show (UnificationVariable name _) = name
     show (UnificationConstantType name) = name
     show (UnificationConstructedType tcname tname) = tcname ++ " " ++ show tname
 
@@ -47,23 +49,29 @@ type TypeConstraintConjunction = Set.Set TypeConstraint
 
 typeContainsVariable :: UnificationType -> Bool
 typeContainsVariable (UnificationConstantType _) = False
-typeContainsVariable (UnificationVariable _) = True
+typeContainsVariable (UnificationVariable _ _) = True
 typeContainsVariable (UnificationConstructedType _ query) = any typeContainsVariable query
 
 typeIsVariable :: UnificationType -> Bool
-typeIsVariable (UnificationVariable _) = True
+typeIsVariable (UnificationVariable _ _) = True
 typeIsVariable _ = False
+
+enumerateVariables :: UnificationType -> [UnificationType]
+enumerateVariables v = case v of
+    UnificationConstantType _ -> []
+    UnificationVariable _ _ -> [v]
+    UnificationConstructedType _ args -> concatMap enumerateVariables args
 
 countVariables :: UnificationType -> Int
 countVariables typ = length $ Set.toList $ getVariables typ
     where
         getVariables :: UnificationType -> Set.Set UnificationType
         getVariables (UnificationConstantType _) = Set.empty
-        getVariables (UnificationVariable v) = Set.singleton $ UnificationVariable v
+        getVariables (UnificationVariable v isGeneric) = Set.singleton $ UnificationVariable v isGeneric
         getVariables (UnificationConstructedType _ args) = Set.unions $ map getVariables args
 
 substituteType :: UnificationType -> UnificationType -> UnificationType -> UnificationType
-substituteType from to (UnificationVariable other) = if UnificationVariable other == from then to else UnificationVariable other
+substituteType from to (UnificationVariable other isGeneric) = if UnificationVariable other isGeneric == from then to else UnificationVariable other isGeneric
 substituteType from to (UnificationConstantType other) = if UnificationConstantType other == from then to else UnificationConstantType other
 substituteType from to (UnificationConstructedType tClass other) = UnificationConstructedType tClass $ map (substituteType from to) other
 
@@ -110,9 +118,6 @@ addResolvedType from to = do
             when (countVariables cur > countVariables to) $ do
                 mapResolvedTypes (Map.delete cur)
                 addGivenResolve
-
-            when (typeContainsVariable to && typeContainsVariable cur) $ do
-                addConstraint (to, cur)
     where
         addGivenResolve :: UnificationState ()
         addGivenResolve = do
@@ -125,10 +130,27 @@ Unification algorithm, as inspired by Metha, PROGRAMMING IN PROLOG UNIFICATION A
 
 clearResolveds :: UnificationState ()
 clearResolveds = do
-    cur <- get
-    let resolveds = Map.toList $ resolvedTypes cur
+    s <- get
+    let resolveds = Map.toList $ resolvedTypes s
     mapM_ (\(from, to) -> mapResolvedTypes $ Map.map (substituteType from to)) resolveds
     mapM_ (\(from, to) -> mapConstraints $ Set.map (\(x,y) -> (substituteType from to x, substituteType from to y))) resolveds
+
+promoteGeneric :: UnificationState ()
+promoteGeneric = do
+    s <- get
+    let potentials = [ xs | (x,_) <- Set.toList $ constraints s, xs <- enumerateVariables x] ++
+                     [ ys | (_,y) <- Set.toList $ constraints s, ys <- enumerateVariables y]
+    applyPotential potentials
+    where 
+        applyPotential :: [UnificationType] -> UnificationState ()
+        applyPotential ps = case ps of
+            (UnificationVariable name True):_ -> do
+                let current = UnificationVariable name True
+                    genericType = UnificationConstantType name
+                mapConstraints $ Set.map (\(x,y) -> (substituteType current genericType x, substituteType current genericType y))
+                mapResolvedTypes $ Map.insert current genericType
+            _:rest -> applyPotential rest
+            _ -> return ()
 
 processConstraint :: TypeConstraint -> UnificationState ()
 processConstraint (leftC, rightC) = do
@@ -138,14 +160,14 @@ processConstraint (leftC, rightC) = do
         else case constraint of
             (UnificationConstantType _, UnificationConstantType _) ->
                 when (leftC == rightC) $ deleteConstraint constraint
-            (UnificationVariable _, UnificationVariable _) -> do
+            (UnificationVariable _ _, UnificationVariable _ _) -> do
                 deleteConstraint constraint
                 addResolvedType leftC rightC
-            (UnificationVariable _, _) ->
+            (UnificationVariable _ _, _) ->
                 unless (typeContainsVariable rightC) $ do
                     deleteConstraint constraint
                     addResolvedType leftC rightC
-            (_, UnificationVariable _) -> do
+            (_, UnificationVariable _ _) -> do
                 deleteConstraint constraint
                 addConstraint (rightC, leftC)
             (UnificationConstructedType leftN leftTs, UnificationConstructedType rightN rightTs) ->
@@ -184,9 +206,11 @@ untilStable action = do
 
 unifyUntilStable :: UnificationState ()
 unifyUntilStable = untilStable $ do
-    augmentConstraints
-    clearResolveds
-    untilStable processConstraints
+    untilStable (do
+        augmentConstraints
+        clearResolveds
+        untilStable processConstraints)
+    promoteGeneric
 
 unification :: TypeConstraintConjunction -> (TypeConstraintConjunction, ResolvedTypes)
 unification initialConstraints =

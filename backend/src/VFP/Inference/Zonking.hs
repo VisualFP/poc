@@ -51,10 +51,10 @@ getOrCreateResolvedGeneric typ = do
             return inferredGeneric
 
 resolveType :: UnificationType -> State ZonkingState InferedType
-resolveType (UnificationVariable var) = do
+resolveType (UnificationVariable var isGeneric) = do
     s <- get 
-    case Map.lookup (UnificationVariable var) $ resolveds s of
-        Nothing -> getOrCreateResolvedGeneric (UnificationVariable var)
+    case Map.lookup (UnificationVariable var isGeneric) $ resolveds s of
+        Nothing -> getOrCreateResolvedGeneric (UnificationVariable var isGeneric)
         Just x -> resolveType x
 resolveType (UnificationConstructedType "(,)" [l, r]) = do
     left <- resolveType l
@@ -105,11 +105,11 @@ zonk expr = case expr of
                 Right inferedR -> Right $ InferedTuple inferedL inferedR infered
 
 checkResiduals :: (TypeConstraintConjunction, ResolvedTypes) -> Either String ZonkingState
-checkResiduals (residuals, types) = trace ("Residuals: " ++ show residuals) $ do
+checkResiduals (residuals, types) = trace ("Residuals: " ++ show residuals) $ trace ("ResolvedTypes: " ++ show types) $ do
     if not $ all (\(l,r) -> typeContainsVariable l && typeContainsVariable r) residuals then
         Left "Expression could not be solved"
     else 
-        Right $ ZonkingState {resolveds = trace ("ResolvedTypes: " ++ show types) types, generics = Map.empty} 
+        Right $ ZonkingState {resolveds = types, generics = Map.empty} 
 
 zonking :: ElaboratedExpression -> (TypeConstraintConjunction, ResolvedTypes) -> InferenceResult
 zonking ex unificationResult = do
