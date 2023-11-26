@@ -7,9 +7,11 @@
     "scripts": {
         "build:haskell": "cd .. && ./buildHaskell.sh",
         "build": "tsc",
-        "start": "yarn run build && yarn run build:haskell && electron ."
+        "start": "yarn run build && yarn run build:haskell && electron .",
+        "package:windows": "electron-packager . VFP --platform=win32 --arch=x64"
     },
     "devDependencies": {
+        "@electron/packager": "^18.0.0",
         "@types/freeport": "^1.0.24",
         "@types/wait-on": "5.3.4",
         "electron": "27.0.4",
