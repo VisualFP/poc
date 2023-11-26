@@ -138,6 +138,9 @@ processConstraint (leftC, rightC) = do
         else case constraint of
             (UnificationConstantType _, UnificationConstantType _) ->
                 when (leftC == rightC) $ deleteConstraint constraint
+            (UnificationVariable _, UnificationVariable _) -> do
+                deleteConstraint constraint
+                addResolvedType leftC rightC
             (UnificationVariable _, _) ->
                 unless (typeContainsVariable rightC) $ do
                     deleteConstraint constraint
@@ -163,13 +166,13 @@ augmentConstraints = do
     let allConstraints = Set.toList $ constraints s
     let allConstraintsWithSwapped = allConstraints ++ map swap allConstraints
     let constraintsToAdd = [(snd left, snd right) |
-                              left <- allConstraintsWithSwapped,
-                              typeIsVariable $ fst left,
-                              not $ typeIsVariable $ snd left,
-                              right <- allConstraintsWithSwapped,
-                              not $ typeIsVariable $ snd right,
-                              fst left == fst right,
-                              snd left /= snd right]
+                             left <- allConstraintsWithSwapped,
+                             typeIsVariable $ fst left,
+                             not $ typeIsVariable $ snd left,
+                             right <- allConstraintsWithSwapped,
+                             not $ typeIsVariable $ snd right,
+                             fst left == fst right,
+                             snd left /= snd right]
     addConstraints constraintsToAdd
 
 untilStable :: UnificationState () -> UnificationState ()
@@ -181,9 +184,9 @@ untilStable action = do
 
 unifyUntilStable :: UnificationState ()
 unifyUntilStable = untilStable $ do
-    untilStable processConstraints
     augmentConstraints
     clearResolveds
+    untilStable processConstraints
 
 unification :: TypeConstraintConjunction -> (TypeConstraintConjunction, ResolvedTypes)
 unification initialConstraints =
