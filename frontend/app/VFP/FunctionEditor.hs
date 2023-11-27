@@ -3,7 +3,7 @@ module VFP.FunctionEditor where
 import Data.Maybe (catMaybes)
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
-import VFP.UI.UIModel ( Identifier, Type (..), TypedValue(..), TypedValue(TypedReference), UntypedValue (Reference, Lambda, TypeHole), UntypedArguments (ArgumentList, ToFill), InferenceResult (Success, Error) )
+import VFP.UI.UIModel
 import Data.Foldable (find)
 import VFP.Translation.WellKnown (prelude)
 import VFP.Translation.InferenceTranslation (infere)
@@ -97,36 +97,46 @@ createFunctionDroppedEventFromDropEvent :: Event UI.DragData -> String -> Event 
 createFunctionDroppedEventFromDropEvent dropEvent holeId = fmap (FunctionDroppedEvent holeId) dropEvent
 
 replaceTypeHoleWithTypedValue:: String -> String -> TypedValue -> UI ValueDefinitionUpdateResult
-replaceTypeHoleWithTypedValue droppedFunctionName targetTypeHoleId definedValue = do
-  runFunction $ ffi $ "console.log('working on function: " ++ show definedValue ++ ", dropped function: " ++ droppedFunctionName ++ ", into type hole: " ++ targetTypeHoleId ++ "')"
-  let maybeTypedPreludeValue = getTypedValueFromPrelude droppedFunctionName
+replaceTypeHoleWithTypedValue typedValueNameToInsert targetTypeHoleId definedValue = do
+  runFunction $ ffi $ "console.log('working on function: " ++ show definedValue ++ ", dropped value: " ++ typedValueNameToInsert ++ ", into type hole: " ++ targetTypeHoleId ++ "')"
+  let maybeTypedPreludeValue = getTypedValueFromPrelude typedValueNameToInsert
   case maybeTypedPreludeValue of
     Just typedPreludeValue -> do
-      let untypedValue = insertTypedValueIntoTypeHole typedPreludeValue targetTypeHoleId definedValue
-      runFunction $ ffi $ "console.log('toinfer " ++ show untypedValue ++ "')"
-      let inferenceResult = infere untypedValue
-      runFunction $ ffi $ "console.log('infered " ++ show inferenceResult ++ "')"
-      case inferenceResult of
-        Success updatedValue -> return $ UpdateSuccess updatedValue
-        Error e -> return $ UpdateError e
+      case insertTypedValueIntoTypeHole typedPreludeValue targetTypeHoleId definedValue of
+        Right untypedValue -> do
+          runFunction $ ffi $ "console.log('toinfer " ++ show untypedValue ++ "')"
+          let inferenceResult = infere untypedValue
+          runFunction $ ffi $ "console.log('infered " ++ show inferenceResult ++ "')"
+          case inferenceResult of
+            Success updatedValue -> return $ UpdateSuccess updatedValue
+            Error e -> return $ UpdateError e
+        Left e -> return $ UpdateError e
     Nothing -> do
-      runFunction $ ffi $ "console.error('failed to locate prelude function " ++ droppedFunctionName ++ "')"
-      return $ UpdateError ("Failed to locate prelude element " ++ droppedFunctionName)
+      runFunction $ ffi $ "console.error('failed to locate prelude function " ++ typedValueNameToInsert ++ "')"
+      return $ UpdateError ("Failed to locate prelude element " ++ typedValueNameToInsert)
 
 getTypedValueFromPrelude :: String -> Maybe TypedValue
-getTypedValueFromPrelude fName = find (isTypedValueFunctionWithName fName) prelude
+getTypedValueFromPrelude name = find (isTypedValueWithName name) prelude
 
-isTypedValueFunctionWithName :: String -> TypedValue -> Bool
-isTypedValueFunctionWithName fName (TypedReference _ refName _) = refName == fName
-isTypedValueFunctionWithName _ _ = False
+isTypedValueWithName :: String -> TypedValue -> Bool
+isTypedValueWithName name (TypedReference _ refName _) = refName == name
+isTypedValueWithName name (TypedLambda {}) = name == "lambda"
+isTypedValueWithName _ _ = False
 
-insertTypedValueIntoTypeHole :: TypedValue -> String -> TypedValue -> UntypedValue
-insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedReference refType refName refArgs) = Reference (Just refType) refName (ArgumentList (map (insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId) refArgs))
-insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedLambda _ (_, lambdaParam) lambdaValue) = Lambda lambdaParam (insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId lambdaValue)
+insertTypedValueIntoTypeHole :: TypedValue -> String -> TypedValue -> Either String UntypedValue
+insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedReference refType refName refArgs) = do
+  case mapM (insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId) refArgs of
+    Right arguments -> Right $ Reference (Just refType) refName (ArgumentList arguments)
+    Left e -> Left e
+insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedLambda lambdaType (_, lambdaParam) lambdaValue) = do
+  case insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId lambdaValue of
+    Right lambaBody -> Right $ Lambda (Just lambdaType) lambdaParam (LambdaValue lambaBody)
+    Left e -> Left e
 insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole typeHoleType typeHoleId) = do
   if typeHoleId == targetTypeHoleId
     then do
       case valueToInsert of
-        TypedReference typeToInsert identifiertToInsert _ -> Reference (Just typeToInsert) identifiertToInsert (ToFill typeHoleType)
-        _ -> TypeHole
-  else TypeHole
+        TypedReference typeToInsert identifiertToInsert _ -> Right $ Reference (Just typeToInsert) identifiertToInsert (ToFill typeHoleType)
+        TypedLambda _ (_, lambdaParam) _ -> Right $ Lambda (Just typeHoleType) lambdaParam ValueToFill
+        _ -> Right TypeHole
+  else Right TypeHole

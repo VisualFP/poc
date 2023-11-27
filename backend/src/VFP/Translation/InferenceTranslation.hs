@@ -15,9 +15,12 @@ buildInputTree ::  UI.UntypedValue -> State Int I.InputExpression
 buildInputTree e = do 
     case e of
         UI.TypeHole -> return $ I.InputTypeHole I.InputUnknownType
-        UI.Lambda name inner -> do
-            _inner <- buildInputTree inner
-            return $ I.InputLambda I.InputUnknownType name _inner
+        UI.Lambda typ name lambdaValue -> do
+            case lambdaValue of
+                UI.LambdaValue inner -> do
+                    _inner <- buildInputTree inner
+                    return $ I.InputValueDefinition (uiToInputType typ) (I.InputLambda I.InputUnknownType name _inner)
+                UI.ValueToFill -> return $ I.InputValueDefinition (uiToInputType typ) (I.InputLambda I.InputUnknownType name $ I.InputTypeHole I.InputUnknownType)
         UI.Reference typ name args ->
             let constant = I.InputConstant (uiToInputType typ) name in
             case args of

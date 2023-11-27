@@ -35,5 +35,8 @@ nil = TypedReference (List $ Generic 1) "nil" []
 cons :: TypedValue
 cons = TypedReference (Function (Generic 1) (Function (List (Generic 1)) (List (Generic 1)))) "cons" []
 
+lambda :: TypedValue
+lambda = TypedLambda (Function (Generic 1) (Generic 2)) (Generic 1, "a") (TypedTypeHole (Generic 2) "0")
+
 prelude :: [TypedValue]
-prelude = [identity, fold, one, two, plus, testString, intToString, cons, nil]
+prelude = [identity, fold, one, two, plus, testString, intToString, cons, nil, lambda]
