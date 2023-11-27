@@ -30,7 +30,7 @@ div {
     padding: 10px 20px;
 }
 
-#visual-fp-sidebar div.prelude-function {
+#visual-fp-sidebar div.prelude-value {
     width: 80%;
 }
 
@@ -44,7 +44,7 @@ div {
 }
 
 #function-editor-container div,
-#visual-fp-sidebar div.prelude-function {
+#visual-fp-sidebar div.prelude-value {
     border: 1px solid black;
     border-radius: 5px;
     height: min-content;
@@ -52,13 +52,13 @@ div {
 }
 
 #function-editor-container div.value-definition,
-#visual-fp-sidebar div.prelude-function {
+#visual-fp-sidebar div.prelude-value {
     margin: auto auto;
     flex-direction: column;
 }
 
 #function-editor-container div.value-definition > p.definition-type,
-#visual-fp-sidebar div.prelude-function > p.function-type {
+#visual-fp-sidebar div.prelude-value > p.value-type {
     align-self: end;
 }
 

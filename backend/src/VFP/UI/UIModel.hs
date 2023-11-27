@@ -23,8 +23,10 @@ data TypedValue = TypedTypeHole Type Identifier -- Identifier = Increasing, inko
 --                      TypeHole      FilledArgs
 data UntypedArguments = ToFill Type | ArgumentList [UntypedValue] deriving Show
 
+data UntypedLambdaValue = ValueToFill | LambdaValue UntypedValue deriving Show
+
 data UntypedValue = TypeHole
-                  | Lambda Identifier UntypedValue
+                  | Lambda (Maybe Type) Identifier UntypedLambdaValue
                   | Reference (Maybe Type) Identifier UntypedArguments
                   deriving Show
 

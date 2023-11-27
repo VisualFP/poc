@@ -28,9 +28,9 @@ setup window = do
 
   _ <- element appContainer #+ [element sideBarContainer, element functionEditorContainer]
   _ <- getBody window #+ [element appContainer]
+  _ <- element sideBarContainer #+ renderSidebar WellKnown.prelude
 
   resetEditorAndRenderFunction window functionEditorContainer "test" WellKnown.string $ TypedTypeHole WellKnown.string "0"
-  _ <- element sideBarContainer #+ renderSidebar WellKnown.prelude
 
   return ()
 
@@ -70,7 +70,7 @@ registerFunctionDroppedEvent window functionEditor defName defType valueDefiniti
       UpdateSuccess updatedValueDefinition -> do
         resetEditorAndRenderFunction window functionEditor defName defType updatedValueDefinition
       UpdateError e -> do
-        runFunction $ ffi $ "console.error('Failed to update function: " ++ e ++ ")"
+        runFunction $ ffi $ "console.error('Failed to update function: " ++ e ++ "')"
     return ()
   return ()
 
@@ -79,16 +79,24 @@ renderSidebar = map renderSidebarFunctionBlock
 
 renderSidebarFunctionBlock :: TypedValue -> UI Element
 renderSidebarFunctionBlock (TypedReference refType refName _) = do
-  preludeFunctionElement <- UI.div #. "prelude-function"
+  preludeFunctionElement <- UI.div #. "prelude-value"
                                    # set UI.draggable True
-                                   # set UI.dragData refName
+                                   # set UI.dragData ("prelude-" ++ refName)
   _ <- element preludeFunctionElement #+ [UI.p # set UI.text refName]
   preludeFunctionTypeElement <- UI.p # set UI.text (show refType)
-                                     #. "function-type"
+                                     #. "value-type"
   _ <- element preludeFunctionElement #+ [element preludeFunctionTypeElement]
   return preludeFunctionElement
+renderSidebarFunctionBlock (TypedLambda lambdaType _ _) = do
+  lambdaElement <- UI.div #. "prelude-value"
+                          # set UI.draggable True
+                          # set UI.dragData "prelude-lambda"
+  _ <- element lambdaElement #+ [UI.p # set UI.text "Lambda Function"]
+  lambdaTypeElement <- UI.p # set UI.text (show lambdaType)
+                            #. "value-type"
+  _ <- element lambdaElement #+ [element lambdaTypeElement]
+  return lambdaElement
 renderSidebarFunctionBlock _ = UI.div # set UI.text "Unsupported prelude value"
-
 
 createAppContainer :: UI Element
 createAppContainer = UI.new # set UI.id_ "visual-fp-application-container"

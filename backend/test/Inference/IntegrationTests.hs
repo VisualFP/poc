@@ -129,6 +129,20 @@ lambdaCrossReferenceTest = TestLabel "lambdaCrossReferenceTest" $ TestCase $
         result = runPipeline input
     in assertInferenceError result
 
+lambdaTypeInferenceTest :: Test
+lambdaTypeInferenceTest = TestLabel "lambdaTypeInferenceTest" $ TestCase $
+    let input = InputValueDefinition (InputFunction inputInt inputInt) (InputLambda inputUnknownType "a" $ InputTypeHole inputUnknownType)
+        result = runPipeline input
+    in case result of
+        Right (InferedLambda (_, paramType) lambdaBody lambdaType) -> do
+            assertType inferedInt (Just paramType)
+            assertType (InferedFunctionType inferedInt inferedInt) (Just lambdaType)
+            case lambdaBody of
+                InferedTypeHole _ holeType -> assertType inferedInt (Just holeType)
+                _ -> assertFailure "Found unexpected expression type"
+        Right _ -> assertFailure "Found unexpected expression type"
+        Left _ -> assertFailure "Failed to infere lambda type"
+
 integrationTests :: Test
 integrationTests = TestLabel "IntegrationTests" $ TestList [
     simpleAdditionTest,
@@ -139,4 +153,6 @@ integrationTests = TestLabel "IntegrationTests" $ TestList [
     simpleLambdaTest,
     lambdaArgumentInferenceTest,
     lambdaWrongReturnTypeTest,
-    lambdaCrossReferenceTest ]
+    lambdaCrossReferenceTest,
+    lambdaTypeInferenceTest
+    ]
