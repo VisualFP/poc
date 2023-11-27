@@ -36,7 +36,7 @@ cons :: TypedValue
 cons = TypedReference (Function (Generic 1) (Function (List (Generic 1)) (List (Generic 1)))) "cons" []
 
 lambda :: TypedValue
-lambda = TypedLambda (Function (Generic 1) (Generic 2)) (Generic 1, "a") (TypedTypeHole (Generic 2) "0")
+lambda = TypedLambda (Function (Generic 1) (Generic 2)) (Generic 1, "a") (TypedTypeHole (Generic 2) "0")    -- TODO: solve param name problem
 
 prelude :: [TypedValue]
 prelude = [identity, fold, one, two, plus, testString, intToString, cons, nil, lambda]

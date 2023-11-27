@@ -30,7 +30,7 @@ setup window = do
   _ <- getBody window #+ [element appContainer]
   _ <- element sideBarContainer #+ renderSidebar WellKnown.prelude
 
-  resetEditorAndRenderFunction window functionEditorContainer "test" (Function WellKnown.string WellKnown.string) $ TypedTypeHole (Function WellKnown.string WellKnown.string) "0"
+  resetEditorAndRenderFunction window functionEditorContainer "test" (Function WellKnown.string (Function WellKnown.string WellKnown.string)) $ TypedTypeHole (Function WellKnown.string (Function WellKnown.string WellKnown.string)) "0"
   --resetEditorAndRenderFunction window functionEditorContainer "test" WellKnown.string $ TypedTypeHole WellKnown.string "0"
 
   return ()
@@ -82,7 +82,7 @@ renderSidebarFunctionBlock :: TypedValue -> UI Element
 renderSidebarFunctionBlock (TypedReference refType refName _) = do
   preludeFunctionElement <- UI.div #. "prelude-value"
                                    # set UI.draggable True
-                                   # set UI.dragData refName
+                                   # set UI.dragData ("prelude-" ++ refName)
   _ <- element preludeFunctionElement #+ [UI.p # set UI.text refName]
   preludeFunctionTypeElement <- UI.p # set UI.text (show refType)
                                      #. "value-type"
@@ -91,7 +91,7 @@ renderSidebarFunctionBlock (TypedReference refType refName _) = do
 renderSidebarFunctionBlock (TypedLambda lambdaType _ _) = do
   lambdaElement <- UI.div #. "prelude-value"
                           # set UI.draggable True
-                          # set UI.dragData "lambda"
+                          # set UI.dragData "prelude-lambda"
   _ <- element lambdaElement #+ [UI.p # set UI.text "Lambda Function"]
   lambdaTypeElement <- UI.p # set UI.text (show lambdaType)
                             #. "value-type"
