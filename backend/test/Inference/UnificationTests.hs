@@ -54,7 +54,5 @@ unsolvableTest = TestLabel "unsolvableTest" $ TestCase $
         assertEqual "resolveds" expectedResolved resultResolved
         assertBool "residuals not null" (not $ Set.null resultResiduals)
 
-
-
 unificationTests :: Test
 unificationTests = TestLabel "UnificationTests" $ TestList [listOfBoolTest, contradictaryTest, multipleIndirectionsTest, simpleFunctionTest, unsolvableTest]

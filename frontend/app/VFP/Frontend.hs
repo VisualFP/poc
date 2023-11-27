@@ -30,8 +30,7 @@ setup window = do
   _ <- getBody window #+ [element appContainer]
   _ <- element sideBarContainer #+ renderSidebar WellKnown.prelude
 
-  resetEditorAndRenderFunction window functionEditorContainer "test" (Function WellKnown.string (Function WellKnown.string WellKnown.string)) $ TypedTypeHole (Function WellKnown.string (Function WellKnown.string WellKnown.string)) "0"
-  --resetEditorAndRenderFunction window functionEditorContainer "test" WellKnown.string $ TypedTypeHole WellKnown.string "0"
+  resetEditorAndRenderFunction window functionEditorContainer "test" WellKnown.string $ TypedTypeHole WellKnown.string "0"
 
   return ()
 
