@@ -90,7 +90,7 @@ getFunctionDroppedEvent window typeHoleId = do
       event <- createFunctionDroppedEvent typeHoleElement typeHoleId
       return $ Just event
     Nothing -> do
-      runFunction $ ffi $ "console.error('Failed to find type hole element with id " ++ typeHoleId ++ ")"
+      runFunction $ ffi $ "console.error('Failed to find type hole element with id " ++ typeHoleId ++ "')"
       return Nothing
 
 createFunctionDroppedEvent :: Element -> String -> UI (Event FunctionDroppedEvent)
@@ -167,23 +167,3 @@ findLambdaParamInValue paramName (TypedReference _ _ args) = if null args
     if null results
       then Nothing
       else Just $ head results
-
-insertTypedValueIntoTypeHole :: TypedValue -> String -> TypedValue -> UntypedValue
-insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedReference refType refName refArgs) = Reference (Just refType) refName (ArgumentList (map (insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId) refArgs))
-insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedLambda lambdaType (_, lambdaParam) lambdaValue) = Lambda (Just lambdaType) lambdaParam (LambdaValue $ insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId lambdaValue)
-insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole typeHoleType typeHoleId) = do
-  if typeHoleId == targetTypeHoleId
-    then do
-      case valueToInsert of
-        TypedReference typeToInsert identifiertToInsert _ -> Reference (Just typeToInsert) identifiertToInsert (ToFill typeHoleType)
-        TypedLambda _ (_, lambdaParam) _ -> Lambda (Just typeHoleType) lambdaParam ValueToFill
-        _ -> TypeHole
-    else TypeHole
-
-insertUntypedValueIntoTypeHole :: UntypedValue -> String -> TypedValue -> UntypedValue
-insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedReference refType refName refArgs) = Reference (Just refType) refName (ArgumentList (map (insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId) refArgs))
-insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedLambda lambdaType (_, lambdaParam) lambdaValue) = Lambda (Just lambdaType) lambdaParam (LambdaValue $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId lambdaValue)
-insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole _ typeHoleId) = do
-  if typeHoleId == targetTypeHoleId
-    then valueToInsert
-    else TypeHole
