@@ -10,43 +10,53 @@ import qualified VFP.Inference.Zonking as O
 import VFP.Inference.Elaboration (elaboration)
 import VFP.Inference.Unification (unification)
 import VFP.Inference.Zonking (zonking)
+import Data.Char
 import Control.Monad.State.Lazy
 import Control.Monad (foldM)
 
 import Debug.Trace
 
-buildInputTree ::  UI.UntypedValue -> State Int I.InputExpression
-buildInputTree e = do
-    case e of
-        UI.TypeHole -> return $ I.InputTypeHole I.InputUnknownType
-        UI.Lambda typ name lambdaValue -> do
-            case lambdaValue of
-                UI.LambdaValue inner -> do
-                    _inner <- buildInputTree inner
-                    return $ I.InputLambda (uiToInputType typ) name _inner
-                UI.ValueToFill -> return $ I.InputLambda (uiToInputType typ) name $ I.InputTypeHole I.InputUnknownType
-        UI.Reference typ name args ->
-            let constant = I.InputConstant (uiToInputType typ) name in
-            case args of
-                UI.ArgumentList _args ->
-                    foldM (\inner arg -> do
-                        argInput <- buildInputTree arg
-                        return $ I.InputApplication I.InputUnknownType inner argInput)
-                        constant _args
-                UI.ToFill toFill -> do
-                    let inputCardinality = countInputCardinality $ uiToInputType typ
-                        toFillCardinality = countUICardinality toFill
-                    inner <- if inputCardinality <= toFillCardinality
-                        then return constant
-                        else do
-                            let nums = [1..inputCardinality - toFillCardinality ]
-                            applied <- foldM (\inner _ -> do
-                                return $ I.InputApplication I.InputUnknownType inner $ I.InputTypeHole I.InputUnknownType)
-                                constant nums
-                            case applied of
-                                I.InputApplication _ inner th -> return $ I.InputApplication (uiToInputType (Just toFill)) inner th
-                                _ -> return applied
-                    return $ I.InputValueDefinition (uiToInputType $ Just toFill) inner
+data InputTreeState = InputTreeState{genericCounter::Int, lambdaParamCounter::Int}
+
+buildInputTree ::  UI.UntypedValue -> State InputTreeState I.InputExpression
+buildInputTree e = case e of
+    UI.TypeHole -> return $ I.InputTypeHole I.InputUnknownType
+    UI.Lambda typ lambdaValue -> do
+        s <- get
+        let paramName = [chr (ord 'i' + lambdaParamCounter s)]
+        put $ s{lambdaParamCounter = lambdaParamCounter s + 1}
+        inputType <- uiToInputType typ
+        case lambdaValue of
+            UI.LambdaValue inner -> do
+                _inner <- buildInputTree inner
+                return $ I.InputLambda inputType paramName _inner
+            UI.ValueToFill -> return $ I.InputLambda inputType paramName $ I.InputTypeHole I.InputUnknownType
+    UI.Reference typ name args -> do
+        inputType <- uiToInputType typ
+        let constant = I.InputConstant inputType name
+        _s <- get
+        case args of
+            UI.ArgumentList _args ->
+                foldM (\inner arg -> do
+                    argInput <- buildInputTree arg
+                    return $ I.InputApplication I.InputUnknownType inner argInput)
+                    constant _args
+            UI.ToFill toFill -> do
+                inputToFill <- uiToInputType (Just toFill)
+                let inputCardinality = countInputCardinality inputType
+                    toFillCardinality = countUICardinality toFill
+                inner <- if inputCardinality <= toFillCardinality
+                    then return constant
+                    else do
+                        let nums = [1..inputCardinality - toFillCardinality ]
+                        applied <- foldM (\inner _ -> do
+                            return $ I.InputApplication I.InputUnknownType inner $ I.InputTypeHole I.InputUnknownType)
+                            constant nums
+                        case applied of
+                            I.InputApplication _ inner th -> return $ I.InputApplication inputToFill inner th
+                            _ -> return applied
+                return $ I.InputValueDefinition inputToFill inner
+            UI.UnknownArgs -> error "cannot deal with unknown args"
     where
         countInputCardinality :: I.InputType -> Int
         countInputCardinality (I.InputFunction _ to) = 1 + countInputCardinality to
@@ -56,12 +66,32 @@ buildInputTree e = do
         countUICardinality (UI.Function _ to) = 1 + countUICardinality to
         countUICardinality _ = 0
 
-        uiToInputType :: Maybe UI.Type -> I.InputType
-        uiToInputType (Just (UI.Primitive n)) = I.InputPrimitive n
-        uiToInputType (Just (UI.Function from to)) = I.InputFunction (uiToInputType $ Just from) (uiToInputType $ Just to)
-        uiToInputType (Just (UI.List item)) = I.InputList (uiToInputType $ Just item)
-        uiToInputType (Just (UI.Generic num)) = I.InputGeneric num
-        uiToInputType Nothing = I.InputUnknownType
+        getMaxGeneric :: Maybe UI.Type -> Int
+        getMaxGeneric uiType = case uiType of
+            Nothing -> 0
+            Just (UI.Primitive _) -> 0
+            Just (UI.Function from to) -> max (getMaxGeneric (Just from)) (getMaxGeneric (Just to))
+            Just (UI.List item) -> getMaxGeneric $ Just item
+            Just (UI.Generic num) -> num
+
+        uiToInputType :: Maybe UI.Type -> State InputTreeState I.InputType
+        uiToInputType typ = do
+                s <- get
+                let currentOffset = genericCounter s
+                let inputType = _uiToInputType currentOffset typ
+                let newOffset =  currentOffset + getMaxGeneric typ
+                put $ s{genericCounter = newOffset}
+                return inputType
+            where
+                _uiToInputType :: Int -> Maybe UI.Type -> I.InputType
+                _uiToInputType genericOffset uiType = case uiType of 
+                    Nothing -> I.InputUnknownType
+                    Just (UI.Primitive n) -> I.InputPrimitive n
+                    Just (UI.Function from to) -> I.InputFunction
+                        (_uiToInputType genericOffset $ Just from)
+                        (_uiToInputType genericOffset $ Just to)
+                    Just (UI.List item) -> I.InputList (_uiToInputType genericOffset $ Just item)
+                    Just (UI.Generic num) -> I.InputGeneric $ genericOffset + num
 
 buildOutputTree :: O.InferedExpression -> UI.TypedValue
 buildOutputTree ex = case ex of
@@ -86,7 +116,7 @@ buildOutputTree ex = case ex of
 
 infere :: UI.UntypedValue -> UI.InferenceResult
 infere untyped =
-    let input = evalState (buildInputTree (trace ("Untyped: " ++ show untyped) untyped)) 1
+    let input = evalState (buildInputTree (trace ("Untyped: " ++ show untyped) untyped)) InputTreeState{genericCounter=0,lambdaParamCounter=0}
         (elaboratedExpression, typeConstraints) = elaboration (trace ("Input: " ++ show input) input)
         unifcationResult = unification (trace ("Constraints: " ++ show typeConstraints) typeConstraints)
         zonked = zonking (trace ("ElaboratedExpression: " ++ show elaboratedExpression) elaboratedExpression) unifcationResult

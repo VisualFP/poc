@@ -34,11 +34,6 @@ data ElaborationStateValue = ElaborationState {
     generics :: Map.Map Int UnificationType} deriving Show
 type ElaborationState = State ElaborationStateValue
 
-addVariableToReuse :: String -> UnificationType -> ElaborationState ()
-addVariableToReuse name typ = do
-    s <- get
-    put s{variablesToReuse = Map.insert name typ $ variablesToReuse s }
-
 getVariableToReuse :: String -> ElaborationState (Maybe UnificationType)
 getVariableToReuse name = do
     s <- get
@@ -65,7 +60,7 @@ setupVariableReuse :: String -> UnificationType -> ElaborationState ()
 setupVariableReuse name typ = do
     existing <- getVariableToReuse name
     case existing of
-        Nothing -> addVariableToReuse name typ
+        Nothing -> return ()
         Just e -> addElaboratedConstraint (typ, e)
 
 resetGenerics :: ElaborationState ()

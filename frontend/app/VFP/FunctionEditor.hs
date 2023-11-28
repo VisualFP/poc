@@ -29,7 +29,7 @@ generateValueDefinitionElement defName defType valueDefinition = do
   _ <- element valueDefinitionElement #+ [generateValueElement valueDefinition]
   definitionTypeElement <-
     UI.p
-      # set UI.text (show defType)
+      # set UI.text (printShortType defType)
       #. "definition-type"
   _ <- element valueDefinitionElement #+ [element definitionTypeElement]
   return valueDefinitionElement
@@ -41,12 +41,12 @@ generateValueElement (TypedTypeHole holeType holeId) = do
     #. "type-hole function-editor-element"
     # set UI.droppable True
     # set (UI.attr "title") "" -- to prevent tooltips from wrapper elements to appear
-    #+ [UI.p # set UI.text (show holeType)]
+    #+ [UI.p # set UI.text (printShortType holeType)]
 generateValueElement (TypedLambda lambdaType (paramType, paramName) lambdaValue) = do
   lambdaElement <-
     UI.new
       #. "lambda function-editor-element"
-      # set (UI.attr "title") (show lambdaType)
+      # set (UI.attr "title") (printShortType lambdaType)
   lambdaIcon <-
     UI.span
       # set UI.text "λ"
@@ -55,7 +55,7 @@ generateValueElement (TypedLambda lambdaType (paramType, paramName) lambdaValue)
     UI.new
       # set UI.text paramName
       #. "lambda-parameter"
-      # set (UI.attr "title") (show paramType)
+      # set (UI.attr "title") (printShortType paramType)
       # set UI.draggable True
       # set UI.dragData ("lambdaParam-" ++ paramName)
   lambdaValueElement <- generateValueElement lambdaValue
@@ -65,7 +65,7 @@ generateValueElement (TypedReference refType refName args) = do
   referenceValueElement <-
     UI.new
       #. "reference-value function-editor-element"
-      # set (UI.attr "title") (show refType)
+      # set (UI.attr "title") (printShortType refType)
   _ <- element referenceValueElement #+ [UI.p # set UI.text refName]
   _ <- element referenceValueElement #+ map generateValueElement args
   return referenceValueElement
@@ -127,13 +127,13 @@ removePrefix prefix original = fromMaybe original $ stripPrefix prefix original
 
 insertPreludeValueIntoValue :: String -> String -> TypedValue -> Either String UntypedValue
 insertPreludeValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue = case getPreludeValue typedValueNameToInsert of
-  Right preludeValue -> Right $ insertTypedValueIntoTypeHole preludeValue targetTypeHoleId definedValue
+  Right preludeValue -> Right $ insertUntypedValueIntoTypeHole preludeValue targetTypeHoleId definedValue
   Left e -> Left e
 
-getPreludeValue :: String -> Either String TypedValue
+getPreludeValue :: String -> Either String UntypedValue
 getPreludeValue typedValueNameToInsert = do
   let preludeFunctionValue = removePrefix "prelude-" typedValueNameToInsert
-  let maybeTypedPreludeValue = getTypedValueFromPrelude preludeFunctionValue
+  let maybeTypedPreludeValue = getValueFromPrelude preludeFunctionValue
   case maybeTypedPreludeValue of
     Just typedPreludeValue -> Right typedPreludeValue
     Nothing -> Left $ "Failed to locate prelude element " ++ preludeFunctionValue
@@ -151,13 +151,13 @@ getLambdaParameterValue typedValueNameToInsert definedValue = do
     Just (paramType, lambdaParam) -> Right $ Reference (Just paramType) lambdaParam $ ToFill paramType
     Nothing -> Left $ "The parameter " ++ lambdaParamName ++ " doesn't exist"
 
-getTypedValueFromPrelude :: String -> Maybe TypedValue
-getTypedValueFromPrelude name = find (isTypedValueWithName name) $ concatMap WellKnonw.values prelude
+getValueFromPrelude :: String -> Maybe UntypedValue
+getValueFromPrelude name = find (isValueWithName name) $ concatMap WellKnonw.values prelude
 
-isTypedValueWithName :: String -> TypedValue -> Bool
-isTypedValueWithName name (TypedReference _ refName _) = refName == name
-isTypedValueWithName name (TypedLambda {}) = name == "lambda"
-isTypedValueWithName _ _ = False
+isValueWithName :: String -> UntypedValue -> Bool
+isValueWithName name (Reference _ refName _) = refName == name
+isValueWithName name (Lambda {}) = name == "lambda"
+isValueWithName _ _ = False
 
 findLambdaParamInValue :: String -> TypedValue -> Maybe (Type, Identifier)
 findLambdaParamInValue paramName (TypedLambda _ (lType, lName) lBody) = if paramName == lName

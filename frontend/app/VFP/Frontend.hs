@@ -84,22 +84,22 @@ renderSidebarGroupBlock :: WellKnown.PreludeGroup -> [UI Element]
 renderSidebarGroupBlock WellKnown.PreludeGroup{WellKnown.name=name, WellKnown.values=values} =
   (UI.h2 # set UI.text name) : map renderSidebarValueBlock values
 
-renderSidebarValueBlock :: TypedValue -> UI Element
-renderSidebarValueBlock (TypedReference refType refName _) = do
+renderSidebarValueBlock :: UntypedValue -> UI Element
+renderSidebarValueBlock (Reference refType refName _) = do
   preludeFunctionElement <- UI.div #. "prelude-value prelude-reference"
                                    # set UI.draggable True
                                    # set UI.dragData ("prelude-" ++ refName)
   _ <- element preludeFunctionElement #+ [UI.p # set UI.text refName]
-  preludeFunctionTypeElement <- UI.p # set UI.text (show refType)
+  preludeFunctionTypeElement <- UI.p # set UI.text (maybe "" printFullType refType)
                                      #. "value-type"
   _ <- element preludeFunctionElement #+ [element preludeFunctionTypeElement]
   return preludeFunctionElement
-renderSidebarValueBlock (TypedLambda lambdaType _ _) = do
+renderSidebarValueBlock (Lambda lambdaType _) = do
   lambdaElement <- UI.div #. "prelude-value prelude-lambda"
                           # set UI.draggable True
                           # set UI.dragData "prelude-lambda"
   _ <- element lambdaElement #+ [UI.p # set UI.text "Lambda Function"]
-  lambdaTypeElement <- UI.p # set UI.text (show lambdaType)
+  lambdaTypeElement <- UI.p # set UI.text (maybe "" printFullType lambdaType)
                             #. "value-type"
   _ <- element lambdaElement #+ [element lambdaTypeElement]
   return lambdaElement
