@@ -1,3 +1,5 @@
+-- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
+
 module VFP.Frontend where
 
 import qualified Graphics.UI.Threepenny as UI

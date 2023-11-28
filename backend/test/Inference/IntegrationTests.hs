@@ -1,3 +1,5 @@
+-- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
+
 module Inference.IntegrationTests where
 
 import VFP.Inference.Example
