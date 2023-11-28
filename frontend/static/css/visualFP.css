@@ -57,6 +57,29 @@ div {
     flex-direction: column;
 }
 
+#function-editor-container div.value-definition {
+    background:
+        radial-gradient(
+            circle at 25% 25%,
+            transparent 14%,#fa9c9c 15%,
+            #fa9c9c 20%,
+            transparent 21%,
+            transparent 100%),
+        radial-gradient(
+            circle at 75% 75%,
+            transparent 11%,
+            #fa9c9c 12%,
+            #fa9c9c 17%,
+            transparent 18%);
+    background-size: 2em 2em;
+    background-color: #ffadad;
+    opacity: 1
+}
+
+#function-editor-container div.value-definition p {
+    background-color: #ffadad;
+}
+
 #function-editor-container div.value-definition > p.definition-type,
 #visual-fp-sidebar div.prelude-value > p.value-type {
     align-self: end;
@@ -83,10 +106,11 @@ div {
 #function-editor-container div.function-editor-element.lambda,
 #visual-fp-sidebar div.prelude-lambda,
 #function-editor-container div.function-editor-element.lambda .lambda-parameter {
-    background: linear-gradient(
-        45deg,
-        #d0dbff 25%,
-        transparent 25%),
+    background:
+        linear-gradient(
+            45deg,
+            #d0dbff 25%,
+            transparent 25%),
         linear-gradient(315deg,
             #d0dbff 25%,
             transparent 25%),
