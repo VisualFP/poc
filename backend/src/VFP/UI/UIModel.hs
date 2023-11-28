@@ -1,8 +1,10 @@
 -- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
+{-# LANGUAGE InstanceSigs #-}
 
 module VFP.UI.UIModel where
 
 import Data.Char
+import qualified Data.Set as Set
 
 type Identifier = String
 data Type = Primitive String
@@ -11,11 +13,28 @@ data Type = Primitive String
           | Function Type Type deriving Eq
 
 instance Show Type where
-    show (Primitive name) = name
-    show (Generic num) = [chr (ord 'a' - 1 + num)]
-    show (List inner) = "[" ++ show inner ++ "]"
-    show (Function (Function fromFrom fromTo) to) = "(" ++ show (Function fromFrom fromTo) ++ ")" ++ " → " ++ show to
-    show (Function from to) = show from ++ " → " ++ show to
+    show :: Type -> String
+    show typ =
+        let generics = getGenerics typ in
+        if null generics
+        then showType typ
+        else "∀ " ++ unwords (map showGeneric $ Set.toList $ Set.fromList $ getGenerics typ) ++ " . " ++ showType typ
+      where
+        getGenerics :: Type -> [Int]
+        getGenerics (Primitive _) = []
+        getGenerics (Generic num) = [num]
+        getGenerics (List inner) = getGenerics inner
+        getGenerics (Function from to) = getGenerics from ++ getGenerics to
+
+        showType :: Type -> String
+        showType (Primitive name) = name
+        showType (Generic num) = showGeneric num
+        showType (List inner) = "[" ++ showType inner ++ "]"
+        showType (Function (Function fromFrom fromTo) to) = "(" ++ showType (Function fromFrom fromTo) ++ ")" ++ " → " ++ showType to
+        showType (Function from to) = showType from ++ " → " ++ showType to
+
+        showGeneric :: Int -> String
+        showGeneric num = [chr (ord 'a' - 1 + num)]
 
 data TypedValue = TypedTypeHole Type Identifier -- Identifier = Increasing, inkonsistent number
                 | TypedLambda Type (Type, Identifier) TypedValue
