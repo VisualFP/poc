@@ -2,20 +2,23 @@
     "name": "visual-fp-app",
     "version": "1.0.0",
     "main": "build/main.js",
-    "license": "GLP-3.0-only",
+    "license": "GPL-3.0-only",
     "author": "Lukas Streckeisen & Jann Flepp",
     "scripts": {
         "build:haskell": "cd .. && ./buildHaskell.sh",
         "build": "tsc",
         "start": "yarn run build && yarn run build:haskell && electron .",
         "package:windows": "electron-packager . VFP --platform=win32 --arch=x64",
-        "package:linux": "electron-packager . VFP --platform=linux --arch=x64"
+        "package:linux": "electron-packager . VFP --platform=linux --arch=x64",
+        "package:mac-arm": "electron-packager . VFP -- platform=darwin --arch=arm64",
+        "package:mac-intel": "electron-packager . VFP -- platform=darwin --arch=x64"
     },
     "devDependencies": {
         "@electron/packager": "^18.0.0",
         "@types/freeport": "^1.0.24",
         "@types/wait-on": "5.3.4",
         "electron": "27.0.4",
+        "electron-packager": "17.1.2",
         "ncp": "2.0.0",
         "typescript": "5.2.2"
     },
