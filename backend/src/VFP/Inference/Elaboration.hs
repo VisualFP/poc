@@ -101,7 +101,7 @@ addElaboratedConstraint :: TypeConstraint -> ElaborationState ()
 addElaboratedConstraint c = do s <- get ; put s{constraints = Set.insert c $ constraints s}
 
 inputToUnificationType :: InputType -> ElaborationState UnificationType
-inputToUnificationType input = do 
+inputToUnificationType input = do
         result <- _inputToUnificationType input
         resetGenerics
         return result

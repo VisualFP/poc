@@ -35,30 +35,73 @@ instance Show InferedExpression where
 
 type InferenceResult = Either String InferedExpression 
 
-zonking :: ElaboratedExpression -> (TypeConstraintConjunction, ResolvedTypes) -> InferenceResult
-zonking expr (residuals, types) = if not $ Set.null residuals then Left "Expression could not be solved" else
-    case expr of
-        ElaboratedConstant typ name -> Right $ InferedConstant name $ resolveType typ
-        ElaboratedTypeHole typ name -> Right $ InferedTypeHole name $ resolveType typ
-        ElaboratedApplication typ left right -> do
-            l <- zonking left (residuals, types)
-            r <- zonking right (residuals, types)
-            Right $ InferedApplication l r $ resolveType typ
-        ElaboratedLambda typ (variableName, variableType) nested -> do
-            nestedEx <- zonking nested (residuals, types)
-            Right $ InferedLambda (variableName, resolveType variableType) nestedEx (resolveType typ)
-        ElaboratedTuple typ left right -> do
-            leftType <- zonking left (residuals, types)
-            rightType <- zonking right (residuals, types)
-            Right $ InferedTuple leftType rightType $ resolveType typ
+checkResiduals :: TypeConstraintConjunction -> Either String ()
+checkResiduals residuals =
+    if Set.null residuals then Right () else
+        let (l, r) = Set.elemAt 0 residuals in
+        Left $ "Inference failed: Could not unify '" ++ show l ++ " ~ " ++ show r ++ "'"
+
+checkScopes :: ElaboratedExpression -> Either String ()
+checkScopes ex =
+        let allIdentifiers = getDeclaredIdentifiers ex in
+        _checkScopes ex allIdentifiers
     where
-        resolveType :: UnificationType -> InferedType
-        resolveType (UnificationVariable var isGeneric) = case Map.lookup (UnificationVariable var isGeneric) types of
+        getDeclaredIdentifiers :: ElaboratedExpression -> [String]
+        getDeclaredIdentifiers curEx = case curEx of
+            ElaboratedConstant _ _ -> []
+            ElaboratedTypeHole _ _ -> []
+            ElaboratedApplication _ left right -> getDeclaredIdentifiers left ++ getDeclaredIdentifiers right
+            ElaboratedLambda _ (variableName, _) nested -> variableName : getDeclaredIdentifiers nested
+            ElaboratedTuple _ left right -> getDeclaredIdentifiers left ++ getDeclaredIdentifiers right
+ 
+        _checkScopes :: ElaboratedExpression -> [String] -> Either String ()
+        _checkScopes curEx bannedIdentifiers = case curEx of
+            ElaboratedConstant _ name -> if name `elem` bannedIdentifiers
+                then Left $ "Scope violation: '" ++ name ++ "' cannot be used here"
+                else Right ()
+            ElaboratedApplication _ left right -> do
+                _checkScopes left bannedIdentifiers
+                _checkScopes right bannedIdentifiers
+            ElaboratedLambda _ (variableName, _) nested ->
+                _checkScopes nested (filter (/= variableName) bannedIdentifiers) 
+            _ -> Right ()
+
+resolveType :: UnificationType -> ResolvedTypes -> InferedType
+resolveType typ resolvedTypes = case typ of
+    UnificationVariable var isGeneric ->
+        case Map.lookup (UnificationVariable var isGeneric) resolvedTypes of
             Nothing -> error $ "variable " ++ show var ++ " not resolved"
-            Just x -> resolveType x
-        resolveType (UnificationConstructedType "(,)" [l, r]) = InferedTupleType (resolveType l) (resolveType r)
-        resolveType (UnificationConstructedType "[]" [item]) = InferedListType $ resolveType item
-        resolveType (UnificationConstructedType "->" [from, to]) = InferedFunctionType (resolveType from) (resolveType to)
-        resolveType (UnificationConstructedType _ _) = error "Constructed Type not supported"
-        resolveType (UnificationConstantType ('G':num)) = InferedGeneric (read num :: Int)
-        resolveType (UnificationConstantType name) = InferedConstantType name
+            Just x -> resolveType x resolvedTypes
+    UnificationConstructedType "(,)" [l, r] ->
+        InferedTupleType (resolveType l resolvedTypes) (resolveType r resolvedTypes)
+    UnificationConstructedType "[]" [item] ->
+        InferedListType $ resolveType item resolvedTypes
+    UnificationConstructedType "->" [from, to] ->
+        InferedFunctionType (resolveType from resolvedTypes) (resolveType to resolvedTypes)
+    UnificationConstructedType _ _ -> error "Constructed Type not supported"
+    UnificationConstantType ('G':num) ->
+        InferedGeneric (read num :: Int)
+    UnificationConstantType name ->
+        InferedConstantType name
+
+zonk :: ElaboratedExpression -> ResolvedTypes -> InferenceResult
+zonk expr types = case expr of
+    ElaboratedConstant typ name -> Right $ InferedConstant name $ resolveType typ types
+    ElaboratedTypeHole typ name -> Right $ InferedTypeHole name $ resolveType typ types
+    ElaboratedApplication typ left right -> do
+        l <- zonk left types
+        r <- zonk right types
+        Right $ InferedApplication l r $ resolveType typ types
+    ElaboratedLambda typ (variableName, variableType) nested -> do
+        nestedEx <- zonk nested types
+        Right $ InferedLambda (variableName, resolveType variableType types) nestedEx (resolveType typ types)
+    ElaboratedTuple typ left right -> do
+        leftType <- zonk left types
+        rightType <- zonk right types
+        Right $ InferedTuple leftType rightType $ resolveType typ types
+
+zonking :: ElaboratedExpression -> (TypeConstraintConjunction, ResolvedTypes) -> InferenceResult
+zonking expr (residuals, types) = do
+    checkResiduals residuals
+    checkScopes expr
+    zonk expr types
