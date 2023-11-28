@@ -1,3 +1,5 @@
+-- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
+
 module VFP.UI.UIModel where
 
 import Data.Char

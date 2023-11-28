@@ -1,3 +1,5 @@
+-- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
+
 module Inference.UnificationTests where
 
 import VFP.Inference.Unification

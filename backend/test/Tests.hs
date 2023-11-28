@@ -1,3 +1,5 @@
+-- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
+
 import Test.HUnit
 import Inference.UnificationTests
 import Inference.IntegrationTests

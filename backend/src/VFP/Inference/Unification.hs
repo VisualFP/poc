@@ -1,3 +1,5 @@
+-- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
+
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use bimap" #-}
 {-# HLINT ignore "Use <$>" #-}
