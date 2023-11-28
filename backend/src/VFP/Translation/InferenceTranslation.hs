@@ -11,16 +11,18 @@ import VFP.Inference.Zonking (zonking)
 import Control.Monad.State.Lazy
 import Control.Monad (foldM)
 
+import Debug.Trace
+
 buildInputTree ::  UI.UntypedValue -> State Int I.InputExpression
-buildInputTree e = do 
+buildInputTree e = do
     case e of
         UI.TypeHole -> return $ I.InputTypeHole I.InputUnknownType
         UI.Lambda typ name lambdaValue -> do
             case lambdaValue of
                 UI.LambdaValue inner -> do
                     _inner <- buildInputTree inner
-                    return $ I.InputValueDefinition (uiToInputType typ) (I.InputLambda I.InputUnknownType name _inner)
-                UI.ValueToFill -> return $ I.InputValueDefinition (uiToInputType typ) (I.InputLambda I.InputUnknownType name $ I.InputTypeHole I.InputUnknownType)
+                    return $ I.InputLambda (uiToInputType typ) name _inner
+                UI.ValueToFill -> return $ I.InputLambda (uiToInputType typ) name $ I.InputTypeHole I.InputUnknownType
         UI.Reference typ name args ->
             let constant = I.InputConstant (uiToInputType typ) name in
             case args of
@@ -82,10 +84,10 @@ buildOutputTree ex = case ex of
 
 infere :: UI.UntypedValue -> UI.InferenceResult
 infere untyped =
-    let input = evalState (buildInputTree untyped) 1
-        (elaboratedExpression, typeConstraints) = elaboration input
-        unifcationResult = unification typeConstraints
-        zonked = zonking elaboratedExpression unifcationResult
-    in case zonked of
+    let input = evalState (buildInputTree (trace ("Untyped: " ++ show untyped) untyped)) 1
+        (elaboratedExpression, typeConstraints) = elaboration (trace ("Input: " ++ show input) input)
+        unifcationResult = unification (trace ("Constraints: " ++ show typeConstraints) typeConstraints)
+        zonked = zonking (trace ("ElaboratedExpression: " ++ show elaboratedExpression) elaboratedExpression) unifcationResult
+    in case trace ("Zonked: " ++ show zonked) zonked of
         Left e -> UI.Error e
         Right r -> UI.Success $ buildOutputTree r

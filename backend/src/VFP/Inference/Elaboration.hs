@@ -52,7 +52,12 @@ addVariableToResuseForSubtree name typ action = do
     return r
 
 initialElaborationStateValue :: ElaborationStateValue
-initialElaborationStateValue = ElaborationState{variableCounter = 0, typeHoleCounter = 0, constraints = Set.empty, variablesToReuse = Map.empty, generics = Map.empty}
+initialElaborationStateValue = ElaborationState{
+    variableCounter = 0,
+    typeHoleCounter = 0,
+    constraints = Set.empty,
+    variablesToReuse = Map.empty,
+    generics = Map.empty}
 
 setupVariableReuse :: String -> UnificationType -> ElaborationState ()
 setupVariableReuse name typ = do
