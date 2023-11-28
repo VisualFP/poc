@@ -1,8 +1,10 @@
 -- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
 
-module VFP.Translation.WellKnown where
+module VFP.Translation.WellKnown(PreludeGroup(..), prelude, string) where
 
 import VFP.UI.UIModel
+
+data PreludeGroup = PreludeGroup { name::String, values :: [TypedValue] }
 
 int :: Type
 int = Primitive "int"
@@ -10,35 +12,47 @@ int = Primitive "int"
 string :: Type
 string = Primitive "string"
 
-identity :: TypedValue
-identity = TypedReference (Function (Generic 1) (Generic 1)) "identity" []
+generalGroup :: PreludeGroup
+generalGroup = PreludeGroup {
+    name = "General",
+    values = [
+        TypedLambda (Function (Generic 1) (Generic 2)) (Generic 1, "a") (TypedTypeHole (Generic 2) "0"),    -- TODO: solve param name problem
+        TypedReference (Function (Generic 1) (Generic 1)) "identity" []
+    ]
+}
 
-fold :: TypedValue
-fold = TypedReference (Function (Function (Generic 1) (Function (Generic 2) (Generic 2))) (Function (Generic 2) (Function (List $ Generic 1) (Generic 2)))) "fold" []
+intGroup :: PreludeGroup
+intGroup = PreludeGroup {
+    name = "Integer",
+    values = [
+        TypedReference int "1" [],
+        TypedReference int "2" [],
+        TypedReference (Function int (Function int int)) "plus" [],
+        TypedReference (Function int string) "intToString" [] 
+    ]
+}
 
-one :: TypedValue
-one = TypedReference int "1" [] 
+stringGroup :: PreludeGroup
+stringGroup = PreludeGroup {
+    name = "String",
+    values = [
+        TypedReference string "\"test\"" [],
+        TypedReference (Function string (Function string string)) "concat" [],
+        TypedReference (Function string (Function (List string) string)) "intercalate" []
+    ]
+}
 
-testString :: TypedValue
-testString = TypedReference string "\"test\"" [] 
+listGroup :: PreludeGroup
+listGroup = PreludeGroup {
+    name = "List",
+    values = [
+        TypedReference (List $ Generic 1) "nil" [],
+        TypedReference (Function (Generic 1) (Function (List (Generic 1)) (List (Generic 1)))) "cons" [],
+        TypedReference (Function (Function (Generic 1) (Function (Generic 2) (Generic 2))) (Function (Generic 2) (Function (List $ Generic 1) (Generic 2)))) "fold" [],
+        TypedReference (Function (Function (Generic 1) (Generic 2)) (Function (List $ Generic 1) (List $ Generic 2))) "map" []
+    ]
+}
 
-two :: TypedValue
-two = TypedReference int "2" [] 
 
-plus :: TypedValue
-plus = TypedReference (Function int (Function int int)) "plus" [] 
-
-intToString :: TypedValue
-intToString = TypedReference (Function int string) "intToString" [] 
-
-nil :: TypedValue
-nil = TypedReference (List $ Generic 1) "nil" []
-
-cons :: TypedValue
-cons = TypedReference (Function (Generic 1) (Function (List (Generic 1)) (List (Generic 1)))) "cons" []
-
-lambda :: TypedValue
-lambda = TypedLambda (Function (Generic 1) (Generic 2)) (Generic 1, "a") (TypedTypeHole (Generic 2) "0")    -- TODO: solve param name problem
-
-prelude :: [TypedValue]
-prelude = [identity, fold, one, two, plus, testString, intToString, cons, nil, lambda]
+prelude :: [PreludeGroup]
+prelude = [generalGroup, intGroup, stringGroup, listGroup]

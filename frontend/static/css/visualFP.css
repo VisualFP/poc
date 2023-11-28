@@ -20,8 +20,8 @@ div {
 }
 
 #visual-fp-sidebar {
-    height: 100%;
-    width: 250px;
+    overflow-y: auto;
+    width: 300px;
     border-right: 1px solid black;
     display: grid;
     grid-template-columns: auto;
@@ -30,8 +30,12 @@ div {
     padding: 10px 20px;
 }
 
+#visual-fp-sidebar h2 {
+    margin-bottom: 0px;
+}
+
 #visual-fp-sidebar div.prelude-value {
-    width: 80%;
+    width: 85%;
 }
 
 #function-editor-container {
@@ -58,19 +62,12 @@ div {
 }
 
 #function-editor-container div.value-definition {
-    background:
-        radial-gradient(
-            circle at 25% 25%,
-            transparent 14%,#fa9c9c 15%,
-            #fa9c9c 20%,
-            transparent 21%,
-            transparent 100%),
-        radial-gradient(
-            circle at 75% 75%,
-            transparent 11%,
-            #fa9c9c 12%,
-            #fa9c9c 17%,
-            transparent 18%);
+    background: repeating-linear-gradient(
+        135deg,
+        #fa9c9c 0%,
+        #fa9c9c 5%,
+        transparent 0,
+        transparent 50%);
     background-size: 2em 2em;
     background-color: #ffadad;
     opacity: 1

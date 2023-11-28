@@ -77,11 +77,15 @@ registerFunctionDroppedEvent window functionEditor defName defType valueDefiniti
     return ()
   return ()
 
-renderSidebar :: [TypedValue] -> [UI Element]
-renderSidebar = map renderSidebarFunctionBlock
+renderSidebar :: [WellKnown.PreludeGroup] -> [UI Element]
+renderSidebar = concatMap renderSidebarGroupBlock
 
-renderSidebarFunctionBlock :: TypedValue -> UI Element
-renderSidebarFunctionBlock (TypedReference refType refName _) = do
+renderSidebarGroupBlock :: WellKnown.PreludeGroup -> [UI Element]
+renderSidebarGroupBlock WellKnown.PreludeGroup{WellKnown.name=name, WellKnown.values=values} =
+  (UI.h2 # set UI.text name) : map renderSidebarValueBlock values
+
+renderSidebarValueBlock :: TypedValue -> UI Element
+renderSidebarValueBlock (TypedReference refType refName _) = do
   preludeFunctionElement <- UI.div #. "prelude-value prelude-reference"
                                    # set UI.draggable True
                                    # set UI.dragData ("prelude-" ++ refName)
@@ -90,7 +94,7 @@ renderSidebarFunctionBlock (TypedReference refType refName _) = do
                                      #. "value-type"
   _ <- element preludeFunctionElement #+ [element preludeFunctionTypeElement]
   return preludeFunctionElement
-renderSidebarFunctionBlock (TypedLambda lambdaType _ _) = do
+renderSidebarValueBlock (TypedLambda lambdaType _ _) = do
   lambdaElement <- UI.div #. "prelude-value prelude-lambda"
                           # set UI.draggable True
                           # set UI.dragData "prelude-lambda"
@@ -99,7 +103,7 @@ renderSidebarFunctionBlock (TypedLambda lambdaType _ _) = do
                             #. "value-type"
   _ <- element lambdaElement #+ [element lambdaTypeElement]
   return lambdaElement
-renderSidebarFunctionBlock _ = UI.div # set UI.text "Unsupported prelude value"
+renderSidebarValueBlock _ = UI.div # set UI.text "Unsupported prelude value"
 
 createAppContainer :: UI Element
 createAppContainer = UI.new # set UI.id_ "visual-fp-application-container"

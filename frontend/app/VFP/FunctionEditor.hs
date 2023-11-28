@@ -10,6 +10,7 @@ import VFP.Translation.InferenceTranslation (infere)
 import VFP.Translation.WellKnown (prelude)
 import VFP.UI.UIModel
 import Data.List (isPrefixOf, stripPrefix)
+import qualified VFP.Translation.WellKnown as WellKnonw
 
 data FunctionDroppedEvent = FunctionDroppedEvent
   { functionDropTargetId :: String,
@@ -151,7 +152,7 @@ getLambdaParameterValue typedValueNameToInsert definedValue = do
     Nothing -> Left $ "The parameter " ++ lambdaParamName ++ " doesn't exist"
 
 getTypedValueFromPrelude :: String -> Maybe TypedValue
-getTypedValueFromPrelude name = find (isTypedValueWithName name) prelude
+getTypedValueFromPrelude name = find (isTypedValueWithName name) $ concatMap WellKnonw.values prelude
 
 isTypedValueWithName :: String -> TypedValue -> Bool
 isTypedValueWithName name (TypedReference _ refName _) = refName == name
