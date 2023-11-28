@@ -39,7 +39,7 @@ checkResiduals :: TypeConstraintConjunction -> Either String ()
 checkResiduals residuals =
     if Set.null residuals then Right () else
         let (l, r) = Set.elemAt 0 residuals in
-        Left $ "Inference failed: Could not unify '" ++ show l ++ " ~ " ++ show r ++ "'"
+        Left $ "Inference failed: Could not unify \"" ++ show l ++ " ~ " ++ show r ++ "\""
 
 checkScopes :: ElaboratedExpression -> Either String ()
 checkScopes ex =
@@ -57,7 +57,7 @@ checkScopes ex =
         _checkScopes :: ElaboratedExpression -> [String] -> Either String ()
         _checkScopes curEx bannedIdentifiers = case curEx of
             ElaboratedConstant _ name -> if name `elem` bannedIdentifiers
-                then Left $ "Scope violation: '" ++ name ++ "' cannot be used here"
+                then Left $ "Scope violation: \"" ++ name ++ "\" cannot be used here"
                 else Right ()
             ElaboratedApplication _ left right -> do
                 _checkScopes left bannedIdentifiers

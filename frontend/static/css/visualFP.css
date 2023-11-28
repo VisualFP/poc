@@ -66,3 +66,23 @@ div {
     gap: 10px;
     align-items: baseline;
 }
+
+#function-editor-container div.error-message {
+    background-color: #FF8F8F;
+    border: 1px solid #FF4C4C;
+    position: fixed;
+    margin: 50px auto 0 auto;
+    left: 50%;
+    gap: 20px;
+}
+
+#function-editor-container div.error-message > button {
+    background-color: inherit;
+    border: none;
+    cursor: pointer;
+}
+
+#function-editor-container div.error-message > button:hover {
+    background-color: #FFB5B5;
+    border-radius: 3px;
+}
