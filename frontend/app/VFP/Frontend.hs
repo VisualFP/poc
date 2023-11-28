@@ -79,7 +79,7 @@ renderSidebar = map renderSidebarFunctionBlock
 
 renderSidebarFunctionBlock :: TypedValue -> UI Element
 renderSidebarFunctionBlock (TypedReference refType refName _) = do
-  preludeFunctionElement <- UI.div #. "prelude-value"
+  preludeFunctionElement <- UI.div #. "prelude-value prelude-reference"
                                    # set UI.draggable True
                                    # set UI.dragData ("prelude-" ++ refName)
   _ <- element preludeFunctionElement #+ [UI.p # set UI.text refName]
@@ -88,7 +88,7 @@ renderSidebarFunctionBlock (TypedReference refType refName _) = do
   _ <- element preludeFunctionElement #+ [element preludeFunctionTypeElement]
   return preludeFunctionElement
 renderSidebarFunctionBlock (TypedLambda lambdaType _ _) = do
-  lambdaElement <- UI.div #. "prelude-value"
+  lambdaElement <- UI.div #. "prelude-value prelude-lambda"
                           # set UI.draggable True
                           # set UI.dragData "prelude-lambda"
   _ <- element lambdaElement #+ [UI.p # set UI.text "Lambda Function"]

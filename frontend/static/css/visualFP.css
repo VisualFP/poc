@@ -2,6 +2,7 @@ html {
     width: 100%;
     height: 100%;
     display: flex;
+    font-size: 1.1em;
 }
 
 body {
@@ -65,4 +66,67 @@ div {
 #function-editor-container div.function-editor-element {
     gap: 10px;
     align-items: baseline;
+}
+ 
+#function-editor-container div.function-editor-element.reference-value,
+#visual-fp-sidebar div.prelude-reference {
+    background: repeating-linear-gradient(
+        45deg,
+        #bbe7b1 0,
+        #bbe7b1 5%,
+        transparent 0,
+        transparent 50%);
+    background-size: 1em 1em;
+    background-color: #c4ffb7;
+    opacity: 1
+}
+ 
+#function-editor-container div.function-editor-element.lambda,
+#visual-fp-sidebar div.prelude-lambda,
+#function-editor-container div.function-editor-element.lambda .lambda-parameter {
+    background: linear-gradient(
+        45deg,
+        #d0dbff 25%,
+        transparent 25%),
+        linear-gradient(315deg,
+            #d0dbff 25%,
+            transparent 25%),
+        linear-gradient(45deg,
+            transparent 24%,
+            #c6d3ff 25%,
+            #c6d3ff 45%,
+            transparent 45%),
+        linear-gradient(315deg,
+            transparent 24%,
+            #c6d3ff 25%,
+            #c6d3ff 45%,
+            transparent 45%);
+    background-size: 2em 2em;
+    background-color: #d0dbff;
+    opacity: 1
+}
+
+#function-editor-container div.function-editor-element.lambda p,
+#visual-fp-sidebar div.prelude-lambda p,
+#function-editor-container div.function-editor-element.lambda .lambda-parameter {
+    background-color: #c6d3ff;
+    width: fit-content;
+}
+
+#function-editor-container div.function-editor-element.reference-value p,
+#visual-fp-sidebar div.prelude-reference p {
+    background-color: #c4ffb7;
+    width: fit-content
+}
+
+#function-editor-container div.function-editor-element.type-hole {
+    background: radial-gradient(circle, #c9c9c9 25%, transparent 11%);
+    background-size: 1.2em 1.2em;
+    background-color: #dfdfdf;
+    opacity: 1
+}
+
+#function-editor-container div.function-editor-element.type-hole p {
+    background-color: #dfdfdf;
+    width: fit-content;
 }

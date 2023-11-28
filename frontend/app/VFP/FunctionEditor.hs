@@ -34,18 +34,18 @@ generateValueDefinitionElement defName defType valueDefinition = do
 generateValueElement :: TypedValue -> UI Element
 generateValueElement (TypedTypeHole holeType holeId) = do
   UI.new
-    # set UI.text (show holeType)
     # set UI.id_ holeId
     #. "type-hole function-editor-element"
     # set UI.droppable True
     # set (UI.attr "title") "" -- to prevent tooltips from wrapper elements to appear
+    #+ [UI.p # set UI.text (show holeType)]
 generateValueElement (TypedLambda lambdaType (paramType, paramName) lambdaValue) = do
   lambdaElement <-
     UI.new
       #. "lambda function-editor-element"
       # set (UI.attr "title") (show lambdaType)
   lambdaIcon <-
-    UI.p
+    UI.span
       # set UI.text "λ"
       #. "lambda-icon"
   lambdaParameter <-
