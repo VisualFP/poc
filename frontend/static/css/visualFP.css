@@ -34,7 +34,7 @@ div {
     margin-bottom: 0px;
 }
 
-#visual-fp-sidebar div.prelude-value {
+#visual-fp-sidebar div.value {
     width: 85%;
 }
 
@@ -48,7 +48,7 @@ div {
 }
 
 #function-editor-container div,
-#visual-fp-sidebar div.prelude-value {
+#visual-fp-sidebar div.value {
     border: 1px solid black;
     border-radius: 5px;
     height: min-content;
@@ -56,7 +56,7 @@ div {
 }
 
 #function-editor-container div.value-definition,
-#visual-fp-sidebar div.prelude-value {
+#visual-fp-sidebar div.value {
     margin: auto auto;
     flex-direction: column;
 }
@@ -78,7 +78,7 @@ div {
 }
 
 #function-editor-container div.value-definition > p.definition-type,
-#visual-fp-sidebar div.prelude-value > p.value-type {
+#visual-fp-sidebar div.value > p.value-type {
     align-self: end;
 }
 
@@ -88,7 +88,9 @@ div {
 }
  
 #function-editor-container div.function-editor-element.reference-value,
-#visual-fp-sidebar div.prelude-reference {
+#function-editor-container div.function-editor-element.literal,
+#visual-fp-sidebar div.prelude-reference,
+#visual-fp-sidebar div.literal {
     background: repeating-linear-gradient(
         45deg,
         #bbe7b1 0,
@@ -134,7 +136,9 @@ div {
 }
 
 #function-editor-container div.function-editor-element.reference-value p,
-#visual-fp-sidebar div.prelude-reference p {
+#function-editor-container div.function-editor-element.literal,
+#visual-fp-sidebar div.prelude-reference p,
+#visual-fp-sidebar div.literal p {
     background-color: #c4ffb7;
     width: fit-content
 }

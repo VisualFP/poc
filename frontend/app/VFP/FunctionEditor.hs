@@ -10,7 +10,8 @@ import VFP.Translation.InferenceTranslation (infere)
 import VFP.Translation.WellKnown (prelude)
 import VFP.UI.UIModel
 import Data.List (isPrefixOf, stripPrefix)
-import qualified VFP.Translation.WellKnown as WellKnonw
+import qualified VFP.Translation.WellKnown as WellKnown
+import Text.Read (readMaybe)
 
 data FunctionDroppedEvent = FunctionDroppedEvent
   { functionDropTargetId :: String,
@@ -105,13 +106,16 @@ createFunctionDroppedEvent typeHoleElement holeId = do
 createFunctionDroppedEventFromDropEvent :: Event UI.DragData -> String -> Event FunctionDroppedEvent
 createFunctionDroppedEventFromDropEvent dropEvent holeId = fmap (FunctionDroppedEvent holeId) dropEvent
 
-replaceTypeHoleWithTypedValue :: String -> String -> TypedValue -> UI ValueDefinitionUpdateResult
-replaceTypeHoleWithTypedValue typedValueNameToInsert targetTypeHoleId definedValue = do
+replaceTypeHoleWithValue :: String -> String -> TypedValue -> UI ValueDefinitionUpdateResult
+replaceTypeHoleWithValue typedValueNameToInsert targetTypeHoleId definedValue = do
   runFunction $ ffi $ "console.log('working on function: " ++ show definedValue ++ ", dropped value: " ++ typedValueNameToInsert ++ ", into type hole: " ++ targetTypeHoleId ++ "')"
-  let untypedValueResult
-        | "prelude-" `isPrefixOf` typedValueNameToInsert = insertPreludeValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue
-        | "lambdaParam-" `isPrefixOf` typedValueNameToInsert = insertLambdaParamIntoValue typedValueNameToInsert targetTypeHoleId definedValue
-        | otherwise = Left $ "Found unknown value name type " ++ typedValueNameToInsert
+  let untypedValueResultAction
+        | "literal-int" `isPrefixOf` typedValueNameToInsert = insertIntegerLiteralIntoValue targetTypeHoleId definedValue
+        | "literal-string" `isPrefixOf` typedValueNameToInsert = insertStringLiteralIntoValue targetTypeHoleId definedValue
+        | "prelude-" `isPrefixOf` typedValueNameToInsert = return $ insertPreludeValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue
+        | "lambdaParam-" `isPrefixOf` typedValueNameToInsert = return $ insertLambdaParamIntoValue typedValueNameToInsert targetTypeHoleId definedValue
+        | otherwise = return $ Left $ "Found unknown value name type " ++ typedValueNameToInsert
+  untypedValueResult <- untypedValueResultAction
   case untypedValueResult of
     Right untypedValue -> do
       runFunction $ ffi $ "console.log('toinfer " ++ show untypedValue ++ "')"
@@ -124,6 +128,22 @@ replaceTypeHoleWithTypedValue typedValueNameToInsert targetTypeHoleId definedVal
 
 removePrefix :: String -> String -> String
 removePrefix prefix original = fromMaybe original $ stripPrefix prefix original
+
+insertStringLiteralIntoValue :: String -> TypedValue -> UI (Either String UntypedValue)
+insertStringLiteralIntoValue targetTypeHoleId definedValue = do  
+  paramResult <- callFunction $ ffi "prompt(\"Insert String\")"
+  let valueToInsert = Reference (Just WellKnown.string) ("\"" ++ paramResult ++ "\"") (ArgumentList [])
+  return $ Right $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
+
+insertIntegerLiteralIntoValue :: String -> TypedValue -> UI (Either String UntypedValue)
+insertIntegerLiteralIntoValue targetTypeHoleId definedValue = do  
+  promptResult <- callFunction $ ffi "prompt(\"Insert Integer\")"
+  let parsedInput = (readMaybe promptResult :: Maybe Int)
+  return $ case parsedInput of
+    Nothing -> Left "Invalid value inserted"
+    Just name ->
+      let valueToInsert = Reference (Just WellKnown.int) (show name) (ArgumentList [])  in
+      Right $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
 
 insertPreludeValueIntoValue :: String -> String -> TypedValue -> Either String UntypedValue
 insertPreludeValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue = case getPreludeValue typedValueNameToInsert of
@@ -152,7 +172,7 @@ getLambdaParameterValue typedValueNameToInsert definedValue = do
     Nothing -> Left $ "The parameter " ++ lambdaParamName ++ " doesn't exist"
 
 getValueFromPrelude :: String -> Maybe UntypedValue
-getValueFromPrelude name = find (isValueWithName name) $ concatMap WellKnonw.values prelude
+getValueFromPrelude name = find (isValueWithName name) $ concatMap WellKnown.values prelude
 
 isValueWithName :: String -> UntypedValue -> Bool
 isValueWithName name (Reference _ refName _) = refName == name

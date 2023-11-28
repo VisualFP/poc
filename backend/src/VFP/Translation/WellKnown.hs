@@ -1,6 +1,6 @@
 -- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
 
-module VFP.Translation.WellKnown(PreludeGroup(..), prelude, string) where
+module VFP.Translation.WellKnown(PreludeGroup(..), prelude, string, int) where
 
 import VFP.UI.UIModel
 
@@ -25,7 +25,7 @@ intGroup :: PreludeGroup
 intGroup = PreludeGroup {
     name = "Integer",
     values = [
-        Reference (Just int) "1" UnknownArgs,
+        IntegerLiteral,
         Reference (Just int) "2" UnknownArgs,
         Reference (Just $ Function int (Function int int)) "plus" UnknownArgs,
         Reference (Just $ Function int string) "intToString" UnknownArgs 
@@ -36,7 +36,7 @@ stringGroup :: PreludeGroup
 stringGroup = PreludeGroup {
     name = "String",
     values = [
-        Reference (Just string) "\"test\"" UnknownArgs,
+        StringLiteral,
         Reference (Just $ Function string (Function string string)) "concat" UnknownArgs,
         Reference (Just $ Function string (Function (List string) string)) "intercalate" UnknownArgs
     ]

@@ -51,6 +51,8 @@ data UntypedLambdaValue = ValueToFill | LambdaValue UntypedValue deriving Show
 data UntypedValue = TypeHole
                   | Lambda (Maybe Type) UntypedLambdaValue
                   | Reference (Maybe Type) Identifier UntypedArguments
+                  | IntegerLiteral
+                  | StringLiteral
                   deriving Show
 
 data Value = Untyped UntypedValue | Typed TypedValue

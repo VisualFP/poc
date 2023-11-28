@@ -4,7 +4,7 @@ module VFP.Frontend where
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
-import VFP.FunctionEditor (FunctionDroppedEvent (..), generateValueDefinitionElement, getFunctionDroppedEvents, getTypeHolesFromValue, replaceTypeHoleWithTypedValue, ValueDefinitionUpdateResult (..))
+import VFP.FunctionEditor (FunctionDroppedEvent (..), generateValueDefinitionElement, getFunctionDroppedEvents, getTypeHolesFromValue, replaceTypeHoleWithValue, ValueDefinitionUpdateResult (..))
 import Control.Monad (unless)
 import VFP.UI.UIModel
 import qualified VFP.Translation.WellKnown as WellKnown
@@ -67,7 +67,7 @@ registerFunctionDroppedEvent :: Window -> Element -> String -> Type -> TypedValu
 registerFunctionDroppedEvent window functionEditor defName defType valueDefinition event = do
   _ <- onEvent event $ \dropEvent -> do
     runFunction $ ffi "console.log('dropped value')"
-    updateResult <- replaceTypeHoleWithTypedValue (functionDragData dropEvent) (functionDropTargetId dropEvent) valueDefinition
+    updateResult <- replaceTypeHoleWithValue (functionDragData dropEvent) (functionDropTargetId dropEvent) valueDefinition
     case updateResult of
       UpdateSuccess updatedValueDefinition -> do
         resetEditorAndRenderFunction window functionEditor defName defType updatedValueDefinition
@@ -86,7 +86,7 @@ renderSidebarGroupBlock WellKnown.PreludeGroup{WellKnown.name=name, WellKnown.va
 
 renderSidebarValueBlock :: UntypedValue -> UI Element
 renderSidebarValueBlock (Reference refType refName _) = do
-  preludeFunctionElement <- UI.div #. "prelude-value prelude-reference"
+  preludeFunctionElement <- UI.div #. "value prelude-reference"
                                    # set UI.draggable True
                                    # set UI.dragData ("prelude-" ++ refName)
   _ <- element preludeFunctionElement #+ [UI.p # set UI.text refName]
@@ -94,8 +94,26 @@ renderSidebarValueBlock (Reference refType refName _) = do
                                      #. "value-type"
   _ <- element preludeFunctionElement #+ [element preludeFunctionTypeElement]
   return preludeFunctionElement
+renderSidebarValueBlock IntegerLiteral = do
+  literalElement <- UI.div #. "value literal literal-integer"
+                    # set UI.draggable True
+                    # set UI.dragData "literal-integer"
+  _ <- element literalElement #+ [UI.p # set UI.text "Integer Literal"]
+  literalTypeElement <- UI.p # set UI.text (show WellKnown.int)
+                             #. "value-type"
+  _ <- element literalElement #+ [element literalTypeElement]
+  return literalElement
+renderSidebarValueBlock StringLiteral = do
+  literalElement <- UI.div #. "value literal literal-string"
+                    # set UI.draggable True
+                    # set UI.dragData "literal-string"
+  _ <- element literalElement #+ [UI.p # set UI.text "String Literal"]
+  literalTypeElement <- UI.p # set UI.text (show WellKnown.string)
+                             #. "value-type"
+  _ <- element literalElement #+ [element literalTypeElement]
+  return literalElement
 renderSidebarValueBlock (Lambda lambdaType _) = do
-  lambdaElement <- UI.div #. "prelude-value prelude-lambda"
+  lambdaElement <- UI.div #. "value prelude-lambda"
                           # set UI.draggable True
                           # set UI.dragData "prelude-lambda"
   _ <- element lambdaElement #+ [UI.p # set UI.text "Lambda Function"]

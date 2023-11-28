@@ -57,7 +57,12 @@ buildInputTree e = case e of
                             _ -> return applied
                 return $ I.InputValueDefinition inputToFill inner
             UI.UnknownArgs -> error "cannot deal with unknown args"
+    UI.IntegerLiteral -> literalError
+    UI.StringLiteral -> literalError
+
     where
+        literalError = error "literals must be translated to references on the UI layer"
+
         countInputCardinality :: I.InputType -> Int
         countInputCardinality (I.InputFunction _ to) = 1 + countInputCardinality to
         countInputCardinality _ = 0
