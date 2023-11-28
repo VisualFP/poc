@@ -2,7 +2,7 @@
     "name": "visual-fp-app",
     "version": "1.0.0",
     "main": "build/main.js",
-    "license": "MIT",
+    "license": "GLP-3.0-only",
     "author": "Lukas Streckeisen & Jann Flepp",
     "scripts": {
         "build:haskell": "cd .. && ./buildHaskell.sh",

@@ -1,3 +1,5 @@
+-- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
+
 module VFP.UI.UIModel where
 
 import Data.Char
@@ -31,3 +33,23 @@ data UntypedValue = TypeHole
                   deriving Show
 
 data InferenceResult = Error String | Success TypedValue deriving Show
+
+insertTypedValueIntoTypeHole :: TypedValue -> String -> TypedValue -> UntypedValue
+insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedReference refType refName refArgs) = Reference (Just refType) refName (ArgumentList (map (insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId) refArgs))
+insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedLambda lambdaType (_, lambdaParam) lambdaValue) = Lambda (Just lambdaType) lambdaParam (LambdaValue $ insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId lambdaValue)
+insertTypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole typeHoleType typeHoleId) = do
+  if typeHoleId == targetTypeHoleId
+    then do
+      case valueToInsert of
+        TypedReference typeToInsert identifiertToInsert _ -> Reference (Just typeToInsert) identifiertToInsert (ToFill typeHoleType)
+        TypedLambda _ (_, lambdaParam) _ -> Lambda (Just typeHoleType) lambdaParam ValueToFill
+        _ -> TypeHole
+    else TypeHole
+
+insertUntypedValueIntoTypeHole :: UntypedValue -> String -> TypedValue -> UntypedValue
+insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedReference refType refName refArgs) = Reference (Just refType) refName (ArgumentList (map (insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId) refArgs))
+insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedLambda lambdaType (_, lambdaParam) lambdaValue) = Lambda (Just lambdaType) lambdaParam (LambdaValue $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId lambdaValue)
+insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole _ typeHoleId) = do
+  if typeHoleId == targetTypeHoleId
+    then valueToInsert
+    else TypeHole

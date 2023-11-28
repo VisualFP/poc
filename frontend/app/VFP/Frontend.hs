@@ -1,3 +1,5 @@
+-- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
+
 module VFP.Frontend where
 
 import qualified Graphics.UI.Threepenny as UI
@@ -70,6 +72,7 @@ registerFunctionDroppedEvent window functionEditor defName defType valueDefiniti
       UpdateSuccess updatedValueDefinition -> do
         resetEditorAndRenderFunction window functionEditor defName defType updatedValueDefinition
       UpdateError e -> do
+        _ <- element functionEditor #+ [createErrorMessage e]
         runFunction $ ffi $ "console.error('Failed to update function: " ++ e ++ "')"
     return ()
   return ()
@@ -106,3 +109,12 @@ createSideBarContainer = UI.new # set UI.id_ "visual-fp-sidebar"
 
 createFunctionEditorContainer :: UI Element
 createFunctionEditorContainer = UI.new # set UI.id_ "function-editor-container"
+
+createErrorMessage :: String -> UI Element
+createErrorMessage errorMessage = do
+  errorElement <- UI.div #. "error-message"
+  errorMessageElement <- UI.p # set UI.text errorMessage
+  errorDismissButton <- UI.button # set UI.text "X"
+  _ <- element errorElement #+ [element errorMessageElement, element errorDismissButton]
+  on UI.click errorDismissButton $ \_ -> delete errorElement
+  return errorElement

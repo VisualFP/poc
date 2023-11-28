@@ -1,4 +1,7 @@
-// Source: https://github.com/thma/ThreepennyElectron/blob/master/main.js
+/*
+    This file is part of the VisualFP project.
+    It is derived from the ThreepennyElectron project available at https://github.com/thma/ThreepennyElectron/blob/master/main.js which is licensed under the Apache License, Version 2.0.
+*/
 
 import { app, BrowserWindow } from 'electron'
 import { spawn } from 'child_process'

@@ -1,3 +1,6 @@
+-- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
+
+
 {-# OPTIONS_GHC -Wno-missing-signatures #-}
 module VFP.Inference.Example where
 

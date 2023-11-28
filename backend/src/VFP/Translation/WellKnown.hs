@@ -1,3 +1,5 @@
+-- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
+
 module VFP.Translation.WellKnown where
 
 import VFP.UI.UIModel
