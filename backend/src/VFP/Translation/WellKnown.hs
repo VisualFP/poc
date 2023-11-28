@@ -25,8 +25,7 @@ intGroup :: PreludeGroup
 intGroup = PreludeGroup {
     name = "Integer",
     values = [
-        IntegerLiteral,
-        Reference (Just int) "2" UnknownArgs,
+        IntegerLiteral Nothing,
         Reference (Just $ Function int (Function int int)) "plus" UnknownArgs,
         Reference (Just $ Function int string) "intToString" UnknownArgs 
     ]
@@ -36,7 +35,7 @@ stringGroup :: PreludeGroup
 stringGroup = PreludeGroup {
     name = "String",
     values = [
-        StringLiteral,
+        StringLiteral Nothing,
         Reference (Just $ Function string (Function string string)) "concat" UnknownArgs,
         Reference (Just $ Function string (Function (List string) string)) "intercalate" UnknownArgs
     ]

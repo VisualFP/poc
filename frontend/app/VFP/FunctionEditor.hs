@@ -47,7 +47,7 @@ generateValueElement (TypedLambda lambdaType (paramType, paramName) lambdaValue)
   lambdaElement <-
     UI.new
       #. "lambda function-editor-element"
-      # set (UI.attr "title") (printShortType lambdaType)
+      # set (UI.attr "title") (printFullType lambdaType)
   lambdaIcon <-
     UI.span
       # set UI.text "λ"
@@ -56,7 +56,7 @@ generateValueElement (TypedLambda lambdaType (paramType, paramName) lambdaValue)
     UI.new
       # set UI.text paramName
       #. "lambda-parameter"
-      # set (UI.attr "title") (printShortType paramType)
+      # set (UI.attr "title") (printFullType paramType)
       # set UI.draggable True
       # set UI.dragData ("lambdaParam-" ++ paramName)
   lambdaValueElement <- generateValueElement lambdaValue
@@ -66,15 +66,23 @@ generateValueElement (TypedReference refType refName args) = do
   referenceValueElement <-
     UI.new
       #. "reference-value function-editor-element"
-      # set (UI.attr "title") (printShortType refType)
+      # set (UI.attr "title") (printFullType refType)
   _ <- element referenceValueElement #+ [UI.p # set UI.text refName]
   _ <- element referenceValueElement #+ map generateValueElement args
   return referenceValueElement
+generateValueElement (TypedLiteral refType refName) = do
+  literalValueElement <-
+    UI.new
+      #. "literal-value literal function-editor-element"
+      # set (UI.attr "title") (printFullType refType)
+  _ <- element literalValueElement #+ [UI.p # set UI.text refName]
+  return literalValueElement
 
 getTypeHolesFromValue :: TypedValue -> [String]
 getTypeHolesFromValue (TypedTypeHole _ typeHoleId) = [typeHoleId]
 getTypeHolesFromValue (TypedLambda _ _ lambdaValue) = getTypeHolesFromValue lambdaValue
 getTypeHolesFromValue (TypedReference _ _ args) = concatMap getTypeHolesFromValue args
+getTypeHolesFromValue (TypedLiteral _ _) = []
 
 getFunctionDroppedEvents :: Window -> [String] -> UI [Event FunctionDroppedEvent]
 getFunctionDroppedEvents window typeHoles = do
@@ -132,7 +140,7 @@ removePrefix prefix original = fromMaybe original $ stripPrefix prefix original
 insertStringLiteralIntoValue :: String -> TypedValue -> UI (Either String UntypedValue)
 insertStringLiteralIntoValue targetTypeHoleId definedValue = do  
   paramResult <- callFunction $ ffi "prompt(\"Insert String\")"
-  let valueToInsert = Reference (Just WellKnown.string) ("\"" ++ paramResult ++ "\"") (ArgumentList [])
+  let valueToInsert = StringLiteral $ Just ("\"" ++ paramResult ++ "\"")
   return $ Right $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
 
 insertIntegerLiteralIntoValue :: String -> TypedValue -> UI (Either String UntypedValue)
@@ -142,7 +150,7 @@ insertIntegerLiteralIntoValue targetTypeHoleId definedValue = do
   return $ case parsedInput of
     Nothing -> Left "Invalid value inserted"
     Just name ->
-      let valueToInsert = Reference (Just WellKnown.int) (show name) (ArgumentList [])  in
+      let valueToInsert = IntegerLiteral $ Just (show name) in
       Right $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
 
 insertPreludeValueIntoValue :: String -> String -> TypedValue -> Either String UntypedValue
@@ -190,3 +198,4 @@ findLambdaParamInValue paramName (TypedReference _ _ args) = if null args
     if null results
       then Nothing
       else Just $ head results
+findLambdaParamInValue _ (TypedLiteral _ _) = Nothing

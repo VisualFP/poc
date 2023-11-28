@@ -94,7 +94,7 @@ renderSidebarValueBlock (Reference refType refName _) = do
                                      #. "value-type"
   _ <- element preludeFunctionElement #+ [element preludeFunctionTypeElement]
   return preludeFunctionElement
-renderSidebarValueBlock IntegerLiteral = do
+renderSidebarValueBlock (IntegerLiteral _) = do
   literalElement <- UI.div #. "value literal literal-integer"
                     # set UI.draggable True
                     # set UI.dragData "literal-integer"
@@ -103,7 +103,7 @@ renderSidebarValueBlock IntegerLiteral = do
                              #. "value-type"
   _ <- element literalElement #+ [element literalTypeElement]
   return literalElement
-renderSidebarValueBlock StringLiteral = do
+renderSidebarValueBlock (StringLiteral _) = do
   literalElement <- UI.div #. "value literal literal-string"
                     # set UI.draggable True
                     # set UI.dragData "literal-string"

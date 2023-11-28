@@ -11,12 +11,12 @@ import VFP.Inference.Zonking
 
 inputInt = InputPrimitive "int"
 inputString = InputPrimitive "string"
-inputA = InputConstant inputInt "a" 
-inputB = InputConstant inputInt "b" 
-inputPlus = InputConstant (InputFunction inputInt (InputFunction inputInt inputInt)) "plus" 
+inputA = InputReference inputInt "a" 
+inputB = InputReference inputInt "b" 
+inputPlus = InputReference (InputFunction inputInt (InputFunction inputInt inputInt)) "plus" 
 inputUnknownType = InputUnknownType
-inputHole1 = InputConstant inputUnknownType "?1" 
-inputHole2 = InputConstant inputUnknownType "?2" 
+inputHole1 = InputReference inputUnknownType "?1" 
+inputHole2 = InputReference inputUnknownType "?2" 
 
 unifAlpha = UnificationVariable "α" False
 unifBeta = UnificationVariable "β" False

@@ -73,6 +73,18 @@ div {
     opacity: 1
 }
 
+#function-editor-container div.literal,
+#function-editor-container div.function-editor-element.literal,
+#visual-fp-sidebar div.literal {
+    background:
+        radial-gradient(#ffd254 15%, transparent 16%),
+        linear-gradient(45deg, transparent 49%, #ffd254 49% 51%, transparent 51%),
+        linear-gradient(-45deg, transparent 49%, #ffd254 49% 51%, transparent 51%);
+    background-size: 1em 1em;
+    background-color: #ffebba;
+    opacity: 1
+}
+
 #function-editor-container div.value-definition p {
     background-color: #ffadad;
 }
@@ -88,9 +100,7 @@ div {
 }
  
 #function-editor-container div.function-editor-element.reference-value,
-#function-editor-container div.function-editor-element.literal,
-#visual-fp-sidebar div.prelude-reference,
-#visual-fp-sidebar div.literal {
+#visual-fp-sidebar div.prelude-reference {
     background: repeating-linear-gradient(
         45deg,
         #bbe7b1 0,
@@ -136,10 +146,14 @@ div {
 }
 
 #function-editor-container div.function-editor-element.reference-value p,
-#function-editor-container div.function-editor-element.literal,
-#visual-fp-sidebar div.prelude-reference p,
-#visual-fp-sidebar div.literal p {
+#visual-fp-sidebar div.prelude-reference p {
     background-color: #c4ffb7;
+    width: fit-content
+}
+
+#function-editor-container div.function-editor-element.literal-value p,
+#visual-fp-sidebar div.literal-value p {
+    background-color: #ffebba;
     width: fit-content
 }
 

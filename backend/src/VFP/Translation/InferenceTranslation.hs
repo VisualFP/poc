@@ -33,7 +33,7 @@ buildInputTree e = case e of
             UI.ValueToFill -> return $ I.InputLambda inputType paramName $ I.InputTypeHole I.InputUnknownType
     UI.Reference typ name args -> do
         inputType <- uiToInputType typ
-        let constant = I.InputConstant inputType name
+        let constant = I.InputReference inputType name
         _s <- get
         case args of
             UI.ArgumentList _args ->
@@ -57,11 +57,15 @@ buildInputTree e = case e of
                             _ -> return applied
                 return $ I.InputValueDefinition inputToFill inner
             UI.UnknownArgs -> error "cannot deal with unknown args"
-    UI.IntegerLiteral -> literalError
-    UI.StringLiteral -> literalError
+    UI.IntegerLiteral value -> case value of
+        Nothing -> literalError
+        Just lit -> return $ I.InputLiteral (I.InputPrimitive "int") (filter (/= '"') $ show lit)
+    UI.StringLiteral value -> case value of
+        Nothing -> literalError
+        Just lit -> return $ I.InputLiteral (I.InputPrimitive "string") lit
 
     where
-        literalError = error "literals must be translated to references on the UI layer"
+        literalError = error "literals must be filled in the UI layer"
 
         countInputCardinality :: I.InputType -> Int
         countInputCardinality (I.InputFunction _ to) = 1 + countInputCardinality to
@@ -101,7 +105,8 @@ buildInputTree e = case e of
 buildOutputTree :: O.InferedExpression -> UI.TypedValue
 buildOutputTree ex = case ex of
     O.InferedTypeHole name typ -> UI.TypedTypeHole (inferedToUIType typ) name
-    O.InferedConstant name typ -> UI.TypedReference (inferedToUIType typ) name []
+    O.InferedReference name typ -> UI.TypedReference (inferedToUIType typ) name []
+    O.InferedLiteral name typ -> UI.TypedLiteral (inferedToUIType typ) name
     O.InferedApplication func arg _ ->
         let uiFunc = buildOutputTree func
             uiArg = buildOutputTree arg in
