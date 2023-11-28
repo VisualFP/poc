@@ -2,7 +2,7 @@ cabal-version:      3.0
 name:               visual-fp-frontend
 version:            0.1.0.0
 build-type:         Simple
-license:            MIT
+license:            GPL-3.0-only
 author:             Lukas Streckeisen & Jann Flepp
 copyright:          2023 Lukas Streckeisen & Jann Flepp
 

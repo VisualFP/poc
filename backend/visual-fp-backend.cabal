@@ -1,7 +1,7 @@
 cabal-version:      2.4
 name:               visual-fp-backend
 version:            0.1.0.0
-license:            MIT
+license:            GPL-3.0-only
 author:             Lukas Streckeisen & Jann Flepp
 copyright:          2023 Lukas Streckeisen & Jann Flepp
 
