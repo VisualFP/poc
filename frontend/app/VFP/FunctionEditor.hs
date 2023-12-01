@@ -11,7 +11,8 @@ import VFP.Translation.WellKnown (prelude)
 import VFP.UI.UIModel
 import Data.List (isPrefixOf, stripPrefix)
 import qualified VFP.Translation.WellKnown as WellKnown
-import Text.Read (readMaybe)
+import Control.Monad (replicateM)
+import System.Random
 
 data FunctionDroppedEvent = FunctionDroppedEvent
   { functionDropTargetId :: String,
@@ -138,20 +139,16 @@ removePrefix :: String -> String -> String
 removePrefix prefix original = fromMaybe original $ stripPrefix prefix original
 
 insertStringLiteralIntoValue :: String -> TypedValue -> UI (Either String UntypedValue)
-insertStringLiteralIntoValue targetTypeHoleId definedValue = do  
-  paramResult <- callFunction $ ffi "prompt(\"Insert String\")"
-  let valueToInsert = StringLiteral $ Just ("\"" ++ paramResult ++ "\"")
+insertStringLiteralIntoValue targetTypeHoleId definedValue = do
+  stringLiteral <- liftIO generateRandomString
+  let valueToInsert = StringLiteral $ Just ("\"" ++ stringLiteral ++ "\"")
   return $ Right $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
 
 insertIntegerLiteralIntoValue :: String -> TypedValue -> UI (Either String UntypedValue)
-insertIntegerLiteralIntoValue targetTypeHoleId definedValue = do  
-  promptResult <- callFunction $ ffi "prompt(\"Insert Integer\")"
-  let parsedInput = (readMaybe promptResult :: Maybe Int)
-  return $ case parsedInput of
-    Nothing -> Left "Invalid value inserted"
-    Just name ->
-      let valueToInsert = IntegerLiteral $ Just (show name) in
-      Right $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
+insertIntegerLiteralIntoValue targetTypeHoleId definedValue = do
+  intLiteral <- liftIO generateRandomInt
+  let valueToInsert = IntegerLiteral $ Just (show intLiteral)
+  return $ Right $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
 
 insertPreludeValueIntoValue :: String -> String -> TypedValue -> Either String UntypedValue
 insertPreludeValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue = case getPreludeValue typedValueNameToInsert of
@@ -199,3 +196,9 @@ findLambdaParamInValue paramName (TypedReference _ _ args) = if null args
       then Nothing
       else Just $ head results
 findLambdaParamInValue _ (TypedLiteral _ _) = Nothing
+
+generateRandomInt :: IO Int
+generateRandomInt = randomRIO (1,1000)
+
+generateRandomString :: IO String
+generateRandomString = flip replicateM (randomRIO ('A','z')) =<< randomRIO (1,32)
