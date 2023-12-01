@@ -11,7 +11,8 @@ data InputType = InputPrimitive String
                deriving (Show, Eq) 
 
 data InputExpression = InputApplication InputType InputExpression InputExpression 
-                     | InputConstant InputType String 
+                     | InputReference InputType String 
+                     | InputLiteral InputType String 
                      | InputTuple InputType InputExpression InputExpression 
                      | InputLambda InputType String InputExpression
                      | InputValueDefinition InputType InputExpression
@@ -21,7 +22,8 @@ data InputExpression = InputApplication InputType InputExpression InputExpressio
 getInputType :: InputExpression -> InputType 
 getInputType (InputValueDefinition typ _) = typ
 getInputType (InputApplication typ _ _) = typ
-getInputType (InputConstant typ _) = typ
+getInputType (InputReference typ _) = typ
+getInputType (InputLiteral typ _) = typ
 getInputType (InputTuple typ _ _) = typ
 getInputType (InputLambda typ _ _) = typ
 getInputType (InputTypeHole typ) = typ

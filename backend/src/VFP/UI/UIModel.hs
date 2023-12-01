@@ -1,6 +1,4 @@
 -- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
-{-# LANGUAGE InstanceSigs #-}
-
 module VFP.UI.UIModel where
 
 import Data.Char
@@ -41,6 +39,7 @@ instance Show Type where
 data TypedValue = TypedTypeHole Type Identifier -- Identifier = Increasing, inkonsistent number
                 | TypedLambda Type (Type, Identifier) TypedValue
                 | TypedReference Type Identifier [TypedValue]
+                | TypedLiteral Type String
                 deriving Show
 
 --                      TypeHole      FilledArgs
@@ -51,6 +50,8 @@ data UntypedLambdaValue = ValueToFill | LambdaValue UntypedValue deriving Show
 data UntypedValue = TypeHole
                   | Lambda (Maybe Type) UntypedLambdaValue
                   | Reference (Maybe Type) Identifier UntypedArguments
+                  | IntegerLiteral (Maybe String)
+                  | StringLiteral (Maybe String)
                   deriving Show
 
 data Value = Untyped UntypedValue | Typed TypedValue
@@ -60,12 +61,19 @@ data InferenceResult = Error String | Success TypedValue deriving Show
 insertUntypedValueIntoTypeHole :: UntypedValue -> String -> TypedValue -> UntypedValue
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedReference refType refName refArgs) =
   Reference (Just refType) refName (ArgumentList (map (insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId) refArgs))
+insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "int") refName) =
+  IntegerLiteral $ Just refName
+insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "string") refName) =
+  StringLiteral $ Just refName
+insertUntypedValueIntoTypeHole _ _ (TypedLiteral typ _) = error $ "Unknown literal type " ++ show typ
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedLambda lambdaType _ lambdaValue) =
   Lambda (Just lambdaType) (LambdaValue $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId lambdaValue)
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole typeHoleType typeHoleId) = do
   if typeHoleId == targetTypeHoleId
     then case valueToInsert of
       Reference typeToInsert identifiertToInsert _ -> Reference typeToInsert identifiertToInsert (ToFill typeHoleType)
+      IntegerLiteral value -> IntegerLiteral value 
+      StringLiteral value -> StringLiteral value 
       Lambda _ _ -> Lambda (Just typeHoleType) ValueToFill
       _ -> TypeHole
     else TypeHole

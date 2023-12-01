@@ -14,11 +14,12 @@ data InferedType = InferedConstantType String
                  | InferedGeneric Int
                  deriving (Eq)
 
-data InferedExpression = InferedConstant String InferedType
+data InferedExpression = InferedReference String InferedType
                        | InferedApplication InferedExpression InferedExpression InferedType
                        | InferedTuple InferedExpression InferedExpression InferedType
                        | InferedLambda  (String, InferedType) InferedExpression InferedType
                        | InferedTypeHole String InferedType
+                       | InferedLiteral String InferedType
                        deriving (Eq)
 
 instance Show InferedType where
@@ -29,7 +30,8 @@ instance Show InferedType where
     show (InferedFunctionType from to) = show from ++ " -> " ++ show to
 
 instance Show InferedExpression where
-    show (InferedConstant name t) = "(" ++ name ++ ":" ++ show t ++ ")"
+    show (InferedReference name t) = "(" ++ name ++ ":" ++ show t ++ ")"
+    show (InferedLiteral name t) = "(" ++ name ++ ":" ++ show t ++ ")"
     show (InferedApplication left right t) = "(" ++ show left ++ " " ++ show right ++ "):" ++ show t
     show (InferedTuple left right t) = "(" ++ show left ++ "," ++ show right ++ "):" ++ show t
     show (InferedLambda (variableName, variableType) nested t) = "λ" ++ variableName ++ ":" ++ show variableType  ++ "." ++ show nested ++ ":" ++ show t
@@ -50,7 +52,8 @@ checkScopes ex =
     where
         getDeclaredIdentifiers :: ElaboratedExpression -> [String]
         getDeclaredIdentifiers curEx = case curEx of
-            ElaboratedConstant _ _ -> []
+            ElaboratedReference _ _ -> []
+            ElaboratedLiteral _ _ -> []
             ElaboratedTypeHole _ _ -> []
             ElaboratedApplication _ left right -> getDeclaredIdentifiers left ++ getDeclaredIdentifiers right
             ElaboratedLambda _ (variableName, _) nested -> variableName : getDeclaredIdentifiers nested
@@ -58,7 +61,7 @@ checkScopes ex =
  
         _checkScopes :: ElaboratedExpression -> [String] -> Either String ()
         _checkScopes curEx bannedIdentifiers = case curEx of
-            ElaboratedConstant _ name -> if name `elem` bannedIdentifiers
+            ElaboratedReference _ name -> if name `elem` bannedIdentifiers
                 then Left $ "Scope violation: \"" ++ name ++ "\" cannot be used here"
                 else Right ()
             ElaboratedApplication _ left right -> do
@@ -88,7 +91,8 @@ resolveType typ resolvedTypes = case typ of
 
 zonk :: ElaboratedExpression -> ResolvedTypes -> InferenceResult
 zonk expr types = case expr of
-    ElaboratedConstant typ name -> Right $ InferedConstant name $ resolveType typ types
+    ElaboratedReference typ name -> Right $ InferedReference name $ resolveType typ types
+    ElaboratedLiteral typ name -> Right $ InferedLiteral name $ resolveType typ types
     ElaboratedTypeHole typ name -> Right $ InferedTypeHole name $ resolveType typ types
     ElaboratedApplication typ left right -> do
         l <- zonk left types

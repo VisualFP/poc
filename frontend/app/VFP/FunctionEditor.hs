@@ -10,7 +10,9 @@ import VFP.Translation.InferenceTranslation (infere)
 import VFP.Translation.WellKnown (prelude)
 import VFP.UI.UIModel
 import Data.List (isPrefixOf, stripPrefix)
-import qualified VFP.Translation.WellKnown as WellKnonw
+import qualified VFP.Translation.WellKnown as WellKnown
+import Control.Monad (replicateM)
+import System.Random
 
 data FunctionDroppedEvent = FunctionDroppedEvent
   { functionDropTargetId :: String,
@@ -46,7 +48,7 @@ generateValueElement (TypedLambda lambdaType (paramType, paramName) lambdaValue)
   lambdaElement <-
     UI.new
       #. "lambda function-editor-element"
-      # set (UI.attr "title") (printShortType lambdaType)
+      # set (UI.attr "title") (printFullType lambdaType)
   lambdaIcon <-
     UI.span
       # set UI.text "λ"
@@ -55,7 +57,7 @@ generateValueElement (TypedLambda lambdaType (paramType, paramName) lambdaValue)
     UI.new
       # set UI.text paramName
       #. "lambda-parameter"
-      # set (UI.attr "title") (printShortType paramType)
+      # set (UI.attr "title") (printFullType paramType)
       # set UI.draggable True
       # set UI.dragData ("lambdaParam-" ++ paramName)
   lambdaValueElement <- generateValueElement lambdaValue
@@ -65,15 +67,23 @@ generateValueElement (TypedReference refType refName args) = do
   referenceValueElement <-
     UI.new
       #. "reference-value function-editor-element"
-      # set (UI.attr "title") (printShortType refType)
+      # set (UI.attr "title") (printFullType refType)
   _ <- element referenceValueElement #+ [UI.p # set UI.text refName]
   _ <- element referenceValueElement #+ map generateValueElement args
   return referenceValueElement
+generateValueElement (TypedLiteral refType refName) = do
+  literalValueElement <-
+    UI.new
+      #. "literal-value literal function-editor-element"
+      # set (UI.attr "title") (printFullType refType)
+  _ <- element literalValueElement #+ [UI.p # set UI.text refName]
+  return literalValueElement
 
 getTypeHolesFromValue :: TypedValue -> [String]
 getTypeHolesFromValue (TypedTypeHole _ typeHoleId) = [typeHoleId]
 getTypeHolesFromValue (TypedLambda _ _ lambdaValue) = getTypeHolesFromValue lambdaValue
 getTypeHolesFromValue (TypedReference _ _ args) = concatMap getTypeHolesFromValue args
+getTypeHolesFromValue (TypedLiteral _ _) = []
 
 getFunctionDroppedEvents :: Window -> [String] -> UI [Event FunctionDroppedEvent]
 getFunctionDroppedEvents window typeHoles = do
@@ -105,13 +115,16 @@ createFunctionDroppedEvent typeHoleElement holeId = do
 createFunctionDroppedEventFromDropEvent :: Event UI.DragData -> String -> Event FunctionDroppedEvent
 createFunctionDroppedEventFromDropEvent dropEvent holeId = fmap (FunctionDroppedEvent holeId) dropEvent
 
-replaceTypeHoleWithTypedValue :: String -> String -> TypedValue -> UI ValueDefinitionUpdateResult
-replaceTypeHoleWithTypedValue typedValueNameToInsert targetTypeHoleId definedValue = do
+replaceTypeHoleWithValue :: String -> String -> TypedValue -> UI ValueDefinitionUpdateResult
+replaceTypeHoleWithValue typedValueNameToInsert targetTypeHoleId definedValue = do
   runFunction $ ffi $ "console.log('working on function: " ++ show definedValue ++ ", dropped value: " ++ typedValueNameToInsert ++ ", into type hole: " ++ targetTypeHoleId ++ "')"
-  let untypedValueResult
-        | "prelude-" `isPrefixOf` typedValueNameToInsert = insertPreludeValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue
-        | "lambdaParam-" `isPrefixOf` typedValueNameToInsert = insertLambdaParamIntoValue typedValueNameToInsert targetTypeHoleId definedValue
-        | otherwise = Left $ "Found unknown value name type " ++ typedValueNameToInsert
+  let untypedValueResultAction
+        | "literal-int" `isPrefixOf` typedValueNameToInsert = insertIntegerLiteralIntoValue targetTypeHoleId definedValue
+        | "literal-string" `isPrefixOf` typedValueNameToInsert = insertStringLiteralIntoValue targetTypeHoleId definedValue
+        | "prelude-" `isPrefixOf` typedValueNameToInsert = return $ insertPreludeValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue
+        | "lambdaParam-" `isPrefixOf` typedValueNameToInsert = return $ insertLambdaParamIntoValue typedValueNameToInsert targetTypeHoleId definedValue
+        | otherwise = return $ Left $ "Found unknown value name type " ++ typedValueNameToInsert
+  untypedValueResult <- untypedValueResultAction
   case untypedValueResult of
     Right untypedValue -> do
       runFunction $ ffi $ "console.log('toinfer " ++ show untypedValue ++ "')"
@@ -124,6 +137,18 @@ replaceTypeHoleWithTypedValue typedValueNameToInsert targetTypeHoleId definedVal
 
 removePrefix :: String -> String -> String
 removePrefix prefix original = fromMaybe original $ stripPrefix prefix original
+
+insertStringLiteralIntoValue :: String -> TypedValue -> UI (Either String UntypedValue)
+insertStringLiteralIntoValue targetTypeHoleId definedValue = do
+  stringLiteral <- liftIO generateRandomString
+  let valueToInsert = StringLiteral $ Just ("\"" ++ stringLiteral ++ "\"")
+  return $ Right $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
+
+insertIntegerLiteralIntoValue :: String -> TypedValue -> UI (Either String UntypedValue)
+insertIntegerLiteralIntoValue targetTypeHoleId definedValue = do
+  intLiteral <- liftIO generateRandomInt
+  let valueToInsert = IntegerLiteral $ Just (show intLiteral)
+  return $ Right $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
 
 insertPreludeValueIntoValue :: String -> String -> TypedValue -> Either String UntypedValue
 insertPreludeValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue = case getPreludeValue typedValueNameToInsert of
@@ -152,7 +177,7 @@ getLambdaParameterValue typedValueNameToInsert definedValue = do
     Nothing -> Left $ "The parameter " ++ lambdaParamName ++ " doesn't exist"
 
 getValueFromPrelude :: String -> Maybe UntypedValue
-getValueFromPrelude name = find (isValueWithName name) $ concatMap WellKnonw.values prelude
+getValueFromPrelude name = find (isValueWithName name) $ concatMap WellKnown.values prelude
 
 isValueWithName :: String -> UntypedValue -> Bool
 isValueWithName name (Reference _ refName _) = refName == name
@@ -170,3 +195,10 @@ findLambdaParamInValue paramName (TypedReference _ _ args) = if null args
     if null results
       then Nothing
       else Just $ head results
+findLambdaParamInValue _ (TypedLiteral _ _) = Nothing
+
+generateRandomInt :: IO Int
+generateRandomInt = randomRIO (1,1000)
+
+generateRandomString :: IO String
+generateRandomString = flip replicateM (randomRIO ('A','z')) =<< randomRIO (1,32)

@@ -10,11 +10,12 @@ import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
 import Control.Monad.State.Lazy
 
-data ElaboratedExpression = ElaboratedConstant UnificationType String
+data ElaboratedExpression = ElaboratedReference UnificationType String
                           | ElaboratedTuple UnificationType ElaboratedExpression ElaboratedExpression
                           | ElaboratedApplication UnificationType ElaboratedExpression ElaboratedExpression
                           | ElaboratedLambda UnificationType (String, UnificationType) ElaboratedExpression
                           | ElaboratedTypeHole UnificationType String
+                          | ElaboratedLiteral UnificationType String
                           deriving Show
 
 unificationFunctionType :: UnificationType -> UnificationType -> UnificationType
@@ -132,9 +133,12 @@ elaborate input toFill = do
             typeHoleName <- getNextTypeHoleName
             let elaboratedExpression = ElaboratedTypeHole toFill typeHoleName
             return elaboratedExpression
-        InputConstant _ name -> do
+        InputLiteral _ name -> do
+            let elaboratedExpression = ElaboratedLiteral toFill name
+            return elaboratedExpression
+        InputReference _ name -> do
             setupVariableReuse name toFill
-            let elaboratedExpression = ElaboratedConstant toFill name
+            let elaboratedExpression = ElaboratedReference toFill name
             return elaboratedExpression
         InputTuple _ left right -> do
             leftType <- getNextVariable False
