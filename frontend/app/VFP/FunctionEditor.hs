@@ -25,10 +25,10 @@ data ValueDefinitionUpdateResult
   | UpdateError String
 
 generateValueDefinitionElement :: Identifier -> Type -> TypedValue -> UI Element
-generateValueDefinitionElement defName defType valueDefinition = do
+generateValueDefinitionElement defName defType definedValue = do
   valueDefinitionElement <- UI.new #. "value-definition function-editor-element"
   _ <- element valueDefinitionElement #+ [UI.p # set UI.text defName]
-  _ <- element valueDefinitionElement #+ [generateValueElement valueDefinition]
+  _ <- element valueDefinitionElement #+ [generateValueElement definedValue]
   definitionTypeElement <-
     UI.p
       # set UI.text (printShortType defType)
