@@ -40,12 +40,20 @@ printShortType (Function from to) = printShortType from ++ " → " ++ printShort
 instance Show Type where
   show = printShortType
 
+data ValueUnderConstruction = ValueUnderConstruction {
+  valueName :: String,
+  valueDefinition :: TypedValue,
+  valueType :: Type
+} deriving Show
+
+data UntypedValueUnderConstruction = UntypedValueUnderConstruction Type UntypedValue deriving (Show)
+
 data TypedValue
   = TypedTypeHole Type Identifier -- Identifier = Increasing, inkonsistent number
   | TypedLambda Type (Type, Identifier) TypedValue
   | TypedReference Type Identifier [TypedValue]
   | TypedLiteral Type String
-  deriving (Show)
+  deriving (Show, Eq)
 
 --                      TypeHole      FilledArgs
 data UntypedArguments = ToFill Type | ArgumentList [UntypedValue] | UnknownArgs deriving (Show, Eq)
