@@ -9,12 +9,6 @@ import Control.Monad (unless)
 import VFP.UI.UIModel
 import qualified VFP.Translation.WellKnown as WellKnown
 
-data ValueUnderConstruction = ValueUnderConstruction {
-  valueName :: String,
-  valueDefinition :: TypedValue,
-  valueType :: Type
-} deriving Show
-
 start :: Int -> String -> IO ()
 start port dir = startGUI
   defaultConfig
@@ -80,7 +74,7 @@ registerFunctionDroppedEvent :: Window -> Element -> ValueUnderConstruction -> E
 registerFunctionDroppedEvent window functionEditor valueUnderConstruction event = do
   _ <- onEvent event $ \dropEvent -> do
     runFunction $ ffi "console.log('dropped value')"
-    updateResult <- replaceTypeHoleWithValue (functionDragData dropEvent) (functionDropTargetId dropEvent) $ valueDefinition valueUnderConstruction
+    updateResult <- replaceTypeHoleWithValue (functionDragData dropEvent) (functionDropTargetId dropEvent) valueUnderConstruction
     case updateResult of
       UpdateSuccess updatedValueDefinition -> do
         resetEditorAndRenderFunction window functionEditor ValueUnderConstruction { valueName = valueName valueUnderConstruction, valueType = valueType valueUnderConstruction, valueDefinition = updatedValueDefinition }

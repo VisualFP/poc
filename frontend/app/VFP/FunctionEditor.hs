@@ -115,9 +115,10 @@ createFunctionDroppedEvent typeHoleElement holeId = do
 createFunctionDroppedEventFromDropEvent :: Event UI.DragData -> String -> Event FunctionDroppedEvent
 createFunctionDroppedEventFromDropEvent dropEvent holeId = fmap (FunctionDroppedEvent holeId) dropEvent
 
-replaceTypeHoleWithValue :: String -> String -> TypedValue -> UI ValueDefinitionUpdateResult
-replaceTypeHoleWithValue valueNameToInsert targetTypeHoleId definedValue = do
-  runFunction $ ffi $ "console.log('working on function: " ++ show definedValue ++ ", dropped value: " ++ valueNameToInsert ++ ", into type hole: " ++ targetTypeHoleId ++ "')"
+replaceTypeHoleWithValue :: String -> String -> ValueUnderConstruction -> UI ValueDefinitionUpdateResult
+replaceTypeHoleWithValue valueNameToInsert targetTypeHoleId valueUnderConstruction = do
+  runFunction $ ffi $ "console.log('working on function: " ++ show valueUnderConstruction ++ ", dropped value: " ++ valueNameToInsert ++ ", into type hole: " ++ targetTypeHoleId ++ "')"
+  let definedValue = valueDefinition valueUnderConstruction
   let valueResultAction
         | "literal-int" `isPrefixOf` valueNameToInsert = insertIntegerLiteralIntoValue targetTypeHoleId definedValue
         | "literal-string" `isPrefixOf` valueNameToInsert = insertStringLiteralIntoValue targetTypeHoleId definedValue
@@ -128,7 +129,7 @@ replaceTypeHoleWithValue valueNameToInsert targetTypeHoleId definedValue = do
   case valueResult of
     Right untypedValue -> do
       runFunction $ ffi $ "console.log('toinfer " ++ show untypedValue ++ "')"
-      let inferenceResult = infere untypedValue
+      let inferenceResult = infere $ UntypedValueUnderConstruction (valueType valueUnderConstruction) untypedValue
       runFunction $ ffi $ "console.log('infered " ++ show inferenceResult ++ "')"
       case inferenceResult of
         Success updatedValue -> return $ UpdateSuccess updatedValue
