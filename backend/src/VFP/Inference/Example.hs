@@ -9,8 +9,8 @@ import VFP.Inference.InputModel
 import VFP.Inference.Zonking
 
 
-inputInt = InputPrimitive "int"
-inputString = InputPrimitive "string"
+inputInt = InputPrimitive "Int"
+inputString = InputPrimitive "String"
 inputA = InputReference inputInt "a" 
 inputB = InputReference inputInt "b" 
 inputPlus = InputReference (InputFunction inputInt (InputFunction inputInt inputInt)) "plus" 
@@ -28,5 +28,5 @@ unifString = UnificationConstantType "String"
 unifList x = UnificationConstructedType "list" [x]
 unifFunction from to = UnificationConstructedType "->" [from, to]
 
-inferedInt = InferedConstantType "int"
+inferedInt = InferedConstantType "Int"
 

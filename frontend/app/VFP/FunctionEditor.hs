@@ -122,6 +122,7 @@ replaceTypeHoleWithValue valueNameToInsert targetTypeHoleId valueUnderConstructi
   let valueResultAction
         | "literal-int" `isPrefixOf` valueNameToInsert = insertIntegerLiteralIntoValue targetTypeHoleId definedValue
         | "literal-string" `isPrefixOf` valueNameToInsert = insertStringLiteralIntoValue targetTypeHoleId definedValue
+        | "literal-bool" `isPrefixOf` valueNameToInsert = insertBooleanLiteralIntoValue valueNameToInsert targetTypeHoleId definedValue
         | "prelude-" `isPrefixOf` valueNameToInsert = return $ insertPreludeValueIntoValue valueNameToInsert targetTypeHoleId definedValue
         | "lambdaParam-" `isPrefixOf` valueNameToInsert = return $ insertLambdaParamIntoValue valueNameToInsert targetTypeHoleId definedValue
         | otherwise = return $ Left $ "Found unknown value name type " ++ valueNameToInsert
@@ -138,6 +139,14 @@ replaceTypeHoleWithValue valueNameToInsert targetTypeHoleId valueUnderConstructi
 
 removePrefix :: String -> String -> String
 removePrefix prefix original = fromMaybe original $ stripPrefix prefix original
+
+insertBooleanLiteralIntoValue :: String -> String -> TypedValue -> UI (Either String UntypedValue)
+insertBooleanLiteralIntoValue valueNameToInsert targetTypeHoleId definedValue = do
+  let boolData = removePrefix "literal-bool-" valueNameToInsert
+  return $ case boolData of
+    "True" -> insertUntypedValueIntoTypeHole (BooleanLiteral "True") targetTypeHoleId definedValue
+    "False" -> insertUntypedValueIntoTypeHole (BooleanLiteral "False") targetTypeHoleId definedValue
+    _ -> Left $ "Unknown boolean value '" ++ boolData ++ "'"
 
 insertStringLiteralIntoValue :: String -> TypedValue -> UI (Either String UntypedValue)
 insertStringLiteralIntoValue targetTypeHoleId definedValue = do

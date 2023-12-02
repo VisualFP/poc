@@ -65,6 +65,7 @@ data UntypedValue
   | Lambda (Maybe Type) UntypedLambdaValue
   | Reference (Maybe Type) Identifier UntypedArguments
   | IntegerLiteral (Maybe String)
+  | BooleanLiteral String
   | StringLiteral (Maybe String)
   deriving (Show, Eq)
 
@@ -73,8 +74,9 @@ data Value = Untyped UntypedValue | Typed TypedValue
 data InferenceResult = Error String | Success TypedValue deriving (Show)
 
 insertUntypedValueIntoTypeHole :: UntypedValue -> String -> TypedValue -> Either String UntypedValue
-insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "int") refName) = Right $ IntegerLiteral $ Just refName
-insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "string") refName) = Right $ StringLiteral $ Just refName
+insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "Int") refName) = Right $ IntegerLiteral $ Just refName
+insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "String") refName) = Right $ StringLiteral $ Just refName
+insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "Bool") refName) = Right $ BooleanLiteral refName
 insertUntypedValueIntoTypeHole _ _ (TypedLiteral typ _) = Left $ "Unknown literal type " ++ show typ
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedReference refType refName refArgs) =
   let (errors, args) = partitionEithers $ map (insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId) refArgs in
@@ -90,6 +92,7 @@ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole typ
     then case valueToInsert of
       Reference typeToInsert identifiertToInsert _ -> Right $ Reference typeToInsert identifiertToInsert (ToFill typeHoleType)
       IntegerLiteral value -> Right $ IntegerLiteral value
+      BooleanLiteral value -> Right $ BooleanLiteral value
       StringLiteral value -> Right $ StringLiteral value
       Lambda _ _ -> Right $ Lambda (Just typeHoleType) ValueToFill
       TypeHole -> Right TypeHole

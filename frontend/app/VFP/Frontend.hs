@@ -110,6 +110,15 @@ renderSidebarValueBlock (IntegerLiteral _) = do
                              #. "value-type"
   _ <- element literalElement #+ [element literalTypeElement]
   return literalElement
+renderSidebarValueBlock (BooleanLiteral val) = do
+  literalElement <- UI.div #. "value literal literal-boolean"
+                    # set UI.draggable True
+                    # set UI.dragData ("literal-boolean" ++ val)
+  _ <- element literalElement #+ [UI.p # set UI.text val]
+  literalTypeElement <- UI.p # set UI.text (show WellKnown.bool)
+                             #. "value-type"
+  _ <- element literalElement #+ [element literalTypeElement]
+  return literalElement
 renderSidebarValueBlock (StringLiteral _) = do
   literalElement <- UI.div #. "value literal literal-string"
                     # set UI.draggable True
