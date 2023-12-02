@@ -46,10 +46,8 @@ data TypedValue = TypedTypeHole Type Identifier -- Identifier = Increasing, inko
 --                      TypeHole      FilledArgs
 data UntypedArguments = ToFill Type | ArgumentList [UntypedValue] | UnknownArgs deriving Show
 
-data UntypedLambdaValue = ValueToFill | LambdaValue UntypedValue deriving Show
-
 data UntypedValue = TypeHole
-                  | Lambda (Maybe Type) UntypedLambdaValue
+                  | Lambda (Maybe Type) UntypedValue
                   | Reference (Maybe Type) Identifier UntypedArguments
                   | IntegerLiteral (Maybe String)
                   | StringLiteral (Maybe String)
@@ -69,7 +67,7 @@ insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "string") refName) =
   StringLiteral $ Just refName
 insertUntypedValueIntoTypeHole _ _ (TypedLiteral typ _) = error $ "Unknown literal type " ++ show typ
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedLambda lambdaType _ lambdaValue) =
-  Lambda (Just lambdaType) (LambdaValue $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId lambdaValue)
+  Lambda (Just lambdaType) (insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId lambdaValue)
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedValueDefinition typ name inner) =
   ValueDefinition (Just typ) name $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId inner
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole typeHoleType typeHoleId) = do
@@ -78,6 +76,6 @@ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole typ
       Reference typeToInsert identifiertToInsert _ -> Reference typeToInsert identifiertToInsert (ToFill typeHoleType)
       IntegerLiteral value -> IntegerLiteral value 
       StringLiteral value -> StringLiteral value 
-      Lambda _ _ -> Lambda (Just typeHoleType) ValueToFill
+      Lambda _ _ -> Lambda (Just typeHoleType) TypeHole
       _ -> TypeHole
     else TypeHole

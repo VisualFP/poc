@@ -25,16 +25,13 @@ buildInputTree e = case e of
         inputType <- uiToInputType typ
         inputInner <- buildInputTree inner 
         return $ I.InputValueDefinition inputType name inputInner
-    UI.Lambda typ lambdaValue -> do
+    UI.Lambda typ inner -> do
         s <- get
         let paramName = [chr (ord 'i' + lambdaParamCounter s)]
         put $ s{lambdaParamCounter = lambdaParamCounter s + 1}
         inputType <- uiToInputType typ
-        case lambdaValue of
-            UI.LambdaValue inner -> do
-                _inner <- buildInputTree inner
-                return $ I.InputLambda inputType paramName _inner
-            UI.ValueToFill -> return $ I.InputLambda inputType paramName $ I.InputTypeHole I.InputUnknownType
+        _inner <- buildInputTree inner
+        return $ I.InputLambda inputType paramName _inner
     UI.Reference typ name args -> do
         inputType <- uiToInputType typ
         let constant = I.InputReference inputType name
@@ -132,9 +129,9 @@ buildOutputTree ex = case ex of
 infere :: UI.UntypedValue -> UI.InferenceResult
 infere untyped =
     let input = evalState (buildInputTree (trace ("Untyped: " ++ show untyped) untyped)) InputTreeState{genericCounter=0,lambdaParamCounter=0}
-        (elaboratedExpression, typeConstraints) = elaboration (trace ("Input: " ++ show input) input)
-        unifcationResult = unification (trace ("Constraints: " ++ show typeConstraints) typeConstraints)
-        zonked = zonking (trace ("ElaboratedExpression: " ++ show elaboratedExpression) elaboratedExpression) unifcationResult
+        (elaboratedExpression, typeConstraints) = elaboration input
+        unifcationResult = unification typeConstraints
+        zonked = zonking elaboratedExpression unifcationResult
     in case trace ("Zonked: " ++ show zonked) zonked of
         Left e -> UI.Error e
         Right r -> UI.Success $ buildOutputTree r

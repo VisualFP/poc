@@ -27,7 +27,14 @@ data ValueDefinitionUpdateResult
 generateValueElement :: TypedValue -> UI Element
 generateValueElement (TypedValueDefinition typ name inner) = do
   valueDefinitionElement <- UI.new #. "value-definition function-editor-element"
-  _ <- element valueDefinitionElement #+ [UI.p # set UI.text name]
+  definitionReference <-
+    UI.new
+      # set UI.text name
+      #. "definition-reference"
+      # set (UI.attr "title") (printFullType typ)
+      # set UI.draggable True
+      # set UI.dragData ("definitionReference-" ++ name)
+  _ <- element valueDefinitionElement #+ [element definitionReference]
   _ <- element valueDefinitionElement #+ [generateValueElement inner]
   definitionTypeElement <-
     UI.p

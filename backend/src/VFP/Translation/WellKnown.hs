@@ -16,7 +16,7 @@ generalGroup :: PreludeGroup
 generalGroup = PreludeGroup {
     name = "General",
     values = [
-        Lambda (Just $ Function (Generic 1) (Generic 2)) (LambdaValue TypeHole),
+        Lambda (Just $ Function (Generic 1) (Generic 2)) TypeHole,
         Reference (Just $ Function (Generic 1) (Generic 1)) "identity" UnknownArgs
     ]
 }

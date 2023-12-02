@@ -10,6 +10,8 @@ import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
 import Control.Monad.State.Lazy
 
+import Debug.Trace
+
 data ElaboratedExpression = ElaboratedValueDefinition UnificationType String ElaboratedExpression
                           | ElaboratedReference UnificationType String
                           | ElaboratedTuple UnificationType ElaboratedExpression ElaboratedExpression
@@ -79,7 +81,7 @@ getOrCreateGeneric num = do
         Nothing -> do
             typ <- getNextVariable True
             _s <- get
-            put $ _s{generics = Map.insert num typ current }
+            put $ _s{generics = Map.insert num typ current}
             return typ
 
 getNextTypeHoleName :: ElaborationState String
@@ -90,11 +92,11 @@ getNextTypeHoleName = do
     return $ "?" ++ show currentCounter
 
 getNextVariable :: Bool -> ElaborationState UnificationType
-getNextVariable isGeneric = do
+getNextVariable canBePromoted = do
     s <- get
     let currentCounter = variableCounter s
     put $ s{variableCounter = currentCounter + 1}
-    return $ UnificationVariable ("UV" ++ show currentCounter) isGeneric
+    return $ UnificationVariable ((if canBePromoted then "G" else "") ++ "UV" ++ show currentCounter) canBePromoted
 
 addElaboratedConstraint :: TypeConstraint -> ElaborationState ()
 addElaboratedConstraint c = do s <- get ; put s{constraints = Set.insert c $ constraints s}
@@ -162,8 +164,8 @@ elaborate input toFill = do
             addElaboratedConstraint (leftType, unificationFunctionType rightType toFill)
             return elaboratedExpression
         InputLambda _ variable nested -> do
-            variableType <- getNextVariable False
-            nestedType <- getNextVariable False
+            variableType <- getNextVariable True
+            nestedType <- getNextVariable True
             nestedExpression <- addVariableToResuseForSubtree variable variableType $ elaborate nested nestedType
             let elaboratedExpression = ElaboratedLambda toFill (variable, variableType) nestedExpression
             addElaboratedConstraint (toFill, unificationFunctionType variableType nestedType)
@@ -171,9 +173,12 @@ elaborate input toFill = do
 
 runElaboration :: InputExpression -> ElaborationState (ElaboratedExpression, TypeConstraintConjunction)
 runElaboration input = do
+    traceM $ "Input: " ++ show input
     topVariable <- getNextVariable False
     elaboratedExpression <- elaborate input topVariable
+    traceM $ "ElaboratedExpression: " ++ show elaboratedExpression
     finalState <- get
+    traceM $ "Constraints: " ++ show (constraints finalState)
     return (elaboratedExpression, constraints finalState)
 
 elaboration :: InputExpression -> (ElaboratedExpression, TypeConstraintConjunction)

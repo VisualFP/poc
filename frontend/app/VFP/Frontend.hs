@@ -107,7 +107,7 @@ renderSidebarValueBlock (IntegerLiteral _) = do
   _ <- element literalElement #+ [element literalTypeElement]
   return literalElement
 renderSidebarValueBlock (StringLiteral _) = do
-  literalElement <- UI.div #. "value literal-value literal-string"
+  literalElement <- UI.div #. "value literal literal-string"
                     # set UI.draggable True
                     # set UI.dragData "literal-string"
   _ <- element literalElement #+ [UI.p # set UI.text "String Literal"]
