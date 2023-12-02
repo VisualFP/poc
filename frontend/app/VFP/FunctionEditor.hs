@@ -116,16 +116,16 @@ createFunctionDroppedEventFromDropEvent :: Event UI.DragData -> String -> Event 
 createFunctionDroppedEventFromDropEvent dropEvent holeId = fmap (FunctionDroppedEvent holeId) dropEvent
 
 replaceTypeHoleWithValue :: String -> String -> TypedValue -> UI ValueDefinitionUpdateResult
-replaceTypeHoleWithValue typedValueNameToInsert targetTypeHoleId definedValue = do
-  runFunction $ ffi $ "console.log('working on function: " ++ show definedValue ++ ", dropped value: " ++ typedValueNameToInsert ++ ", into type hole: " ++ targetTypeHoleId ++ "')"
-  let untypedValueResultAction
-        | "literal-int" `isPrefixOf` typedValueNameToInsert = insertIntegerLiteralIntoValue targetTypeHoleId definedValue
-        | "literal-string" `isPrefixOf` typedValueNameToInsert = insertStringLiteralIntoValue targetTypeHoleId definedValue
-        | "prelude-" `isPrefixOf` typedValueNameToInsert = return $ insertPreludeValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue
-        | "lambdaParam-" `isPrefixOf` typedValueNameToInsert = return $ insertLambdaParamIntoValue typedValueNameToInsert targetTypeHoleId definedValue
-        | otherwise = return $ Left $ "Found unknown value name type " ++ typedValueNameToInsert
-  untypedValueResult <- untypedValueResultAction
-  case untypedValueResult of
+replaceTypeHoleWithValue valueNameToInsert targetTypeHoleId definedValue = do
+  runFunction $ ffi $ "console.log('working on function: " ++ show definedValue ++ ", dropped value: " ++ valueNameToInsert ++ ", into type hole: " ++ targetTypeHoleId ++ "')"
+  let valueResultAction
+        | "literal-int" `isPrefixOf` valueNameToInsert = insertIntegerLiteralIntoValue targetTypeHoleId definedValue
+        | "literal-string" `isPrefixOf` valueNameToInsert = insertStringLiteralIntoValue targetTypeHoleId definedValue
+        | "prelude-" `isPrefixOf` valueNameToInsert = return $ insertPreludeValueIntoValue valueNameToInsert targetTypeHoleId definedValue
+        | "lambdaParam-" `isPrefixOf` valueNameToInsert = return $ insertLambdaParamIntoValue valueNameToInsert targetTypeHoleId definedValue
+        | otherwise = return $ Left $ "Found unknown value name type " ++ valueNameToInsert
+  valueResult <- valueResultAction
+  case valueResult of
     Right untypedValue -> do
       runFunction $ ffi $ "console.log('toinfer " ++ show untypedValue ++ "')"
       let inferenceResult = infere untypedValue
@@ -142,35 +142,35 @@ insertStringLiteralIntoValue :: String -> TypedValue -> UI (Either String Untype
 insertStringLiteralIntoValue targetTypeHoleId definedValue = do
   stringLiteral <- liftIO generateRandomString
   let valueToInsert = StringLiteral $ Just ("\"" ++ stringLiteral ++ "\"")
-  return $ Right $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
+  return $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
 
 insertIntegerLiteralIntoValue :: String -> TypedValue -> UI (Either String UntypedValue)
 insertIntegerLiteralIntoValue targetTypeHoleId definedValue = do
   intLiteral <- liftIO generateRandomInt
   let valueToInsert = IntegerLiteral $ Just (show intLiteral)
-  return $ Right $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
+  return $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
 
 insertPreludeValueIntoValue :: String -> String -> TypedValue -> Either String UntypedValue
-insertPreludeValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue = case getPreludeValue typedValueNameToInsert of
-  Right preludeValue -> Right $ insertUntypedValueIntoTypeHole preludeValue targetTypeHoleId definedValue
+insertPreludeValueIntoValue valueNameToInsert targetTypeHoleId definedValue = case getPreludeValue valueNameToInsert of
+  Right preludeValue -> insertUntypedValueIntoTypeHole preludeValue targetTypeHoleId definedValue
   Left e -> Left e
 
 getPreludeValue :: String -> Either String UntypedValue
-getPreludeValue typedValueNameToInsert = do
-  let preludeFunctionValue = removePrefix "prelude-" typedValueNameToInsert
-  let maybeTypedPreludeValue = getValueFromPrelude preludeFunctionValue
-  case maybeTypedPreludeValue of
-    Just typedPreludeValue -> Right typedPreludeValue
+getPreludeValue valueNameToInsert = do
+  let preludeFunctionValue = removePrefix "prelude-" valueNameToInsert
+  let maybePreludeValue = getValueFromPrelude preludeFunctionValue
+  case maybePreludeValue of
+    Just preludeValue -> Right preludeValue
     Nothing -> Left $ "Failed to locate prelude element " ++ preludeFunctionValue
 
 insertLambdaParamIntoValue :: String -> String -> TypedValue -> Either String UntypedValue
-insertLambdaParamIntoValue typedValueNameToInsert targetTypeHoleId definedValue = case getLambdaParameterValue typedValueNameToInsert definedValue of
-  Right lambdaParam -> Right $ insertUntypedValueIntoTypeHole lambdaParam targetTypeHoleId definedValue
+insertLambdaParamIntoValue valueNameToInsert targetTypeHoleId definedValue = case getLambdaParameterValue valueNameToInsert definedValue of
+  Right lambdaParam -> insertUntypedValueIntoTypeHole lambdaParam targetTypeHoleId definedValue
   Left e -> Left e
 
 getLambdaParameterValue :: String -> TypedValue -> Either String UntypedValue
-getLambdaParameterValue typedValueNameToInsert definedValue = do
-  let lambdaParamName = removePrefix "lambdaParam-" typedValueNameToInsert
+getLambdaParameterValue valueNameToInsert definedValue = do
+  let lambdaParamName = removePrefix "lambdaParam-" valueNameToInsert
   let maybeLambdaParam = findLambdaParamInValue lambdaParamName definedValue
   case maybeLambdaParam of
     Just (paramType, lambdaParam) -> Right $ Reference (Just paramType) lambdaParam $ ToFill paramType
