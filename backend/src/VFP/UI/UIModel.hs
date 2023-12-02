@@ -40,6 +40,7 @@ data TypedValue = TypedTypeHole Type Identifier -- Identifier = Increasing, inko
                 | TypedLambda Type (Type, Identifier) TypedValue
                 | TypedReference Type Identifier [TypedValue]
                 | TypedLiteral Type String
+                | TypedValueDefinition Type String TypedValue
                 deriving Show
 
 --                      TypeHole      FilledArgs
@@ -52,6 +53,7 @@ data UntypedValue = TypeHole
                   | Reference (Maybe Type) Identifier UntypedArguments
                   | IntegerLiteral (Maybe String)
                   | StringLiteral (Maybe String)
+                  | ValueDefinition (Maybe Type) String UntypedValue
                   deriving Show
 
 data Value = Untyped UntypedValue | Typed TypedValue
@@ -68,6 +70,8 @@ insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "string") refName) =
 insertUntypedValueIntoTypeHole _ _ (TypedLiteral typ _) = error $ "Unknown literal type " ++ show typ
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedLambda lambdaType _ lambdaValue) =
   Lambda (Just lambdaType) (LambdaValue $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId lambdaValue)
+insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedValueDefinition typ name inner) =
+  ValueDefinition (Just typ) name $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId inner
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole typeHoleType typeHoleId) = do
   if typeHoleId == targetTypeHoleId
     then case valueToInsert of

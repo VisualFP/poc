@@ -24,19 +24,17 @@ data ValueDefinitionUpdateResult
   = UpdateSuccess TypedValue
   | UpdateError String
 
-generateValueDefinitionElement :: Identifier -> Type -> TypedValue -> UI Element
-generateValueDefinitionElement defName defType valueDefinition = do
+generateValueElement :: TypedValue -> UI Element
+generateValueElement (TypedValueDefinition typ name inner) = do
   valueDefinitionElement <- UI.new #. "value-definition function-editor-element"
-  _ <- element valueDefinitionElement #+ [UI.p # set UI.text defName]
-  _ <- element valueDefinitionElement #+ [generateValueElement valueDefinition]
+  _ <- element valueDefinitionElement #+ [UI.p # set UI.text name]
+  _ <- element valueDefinitionElement #+ [generateValueElement inner]
   definitionTypeElement <-
     UI.p
-      # set UI.text (printShortType defType)
+      # set UI.text (printShortType typ)
       #. "definition-type"
   _ <- element valueDefinitionElement #+ [element definitionTypeElement]
   return valueDefinitionElement
-
-generateValueElement :: TypedValue -> UI Element
 generateValueElement (TypedTypeHole holeType holeId) = do
   UI.new
     # set UI.id_ holeId
@@ -80,6 +78,7 @@ generateValueElement (TypedLiteral refType refName) = do
   return literalValueElement
 
 getTypeHolesFromValue :: TypedValue -> [String]
+getTypeHolesFromValue (TypedValueDefinition _ _ inner) = getTypeHolesFromValue inner
 getTypeHolesFromValue (TypedTypeHole _ typeHoleId) = [typeHoleId]
 getTypeHolesFromValue (TypedLambda _ _ lambdaValue) = getTypeHolesFromValue lambdaValue
 getTypeHolesFromValue (TypedReference _ _ args) = concatMap getTypeHolesFromValue args
@@ -189,6 +188,8 @@ findLambdaParamInValue paramName (TypedLambda _ (lType, lName) lBody) = if param
   then Just (lType, lName)
   else findLambdaParamInValue paramName lBody
 findLambdaParamInValue _ (TypedTypeHole _ _) = Nothing
+findLambdaParamInValue paramName (TypedValueDefinition _ _ inner) =
+  findLambdaParamInValue paramName inner
 findLambdaParamInValue paramName (TypedReference _ _ args) = if null args
   then Nothing
   else let results = mapMaybe (findLambdaParamInValue paramName) args in

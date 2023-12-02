@@ -167,7 +167,7 @@ div[draggable="true"] {
 }
 
 #function-editor-container div.function-editor-element.literal-value p,
-#visual-fp-sidebar div.literal-value p {
+#visual-fp-sidebar div.literal p {
     background-color: #ffebba;
     width: fit-content
 }

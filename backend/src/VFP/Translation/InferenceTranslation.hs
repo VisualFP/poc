@@ -21,6 +21,10 @@ data InputTreeState = InputTreeState{genericCounter::Int, lambdaParamCounter::In
 buildInputTree ::  UI.UntypedValue -> State InputTreeState I.InputExpression
 buildInputTree e = case e of
     UI.TypeHole -> return $ I.InputTypeHole I.InputUnknownType
+    UI.ValueDefinition typ name inner -> do
+        inputType <- uiToInputType typ
+        inputInner <- buildInputTree inner 
+        return $ I.InputValueDefinition inputType name inputInner
     UI.Lambda typ lambdaValue -> do
         s <- get
         let paramName = [chr (ord 'i' + lambdaParamCounter s)]
@@ -48,14 +52,14 @@ buildInputTree e = case e of
                 inner <- if inputCardinality <= toFillCardinality
                     then return constant
                     else do
-                        let nums = [1..inputCardinality - toFillCardinality ]
+                        let nums = [1..inputCardinality - toFillCardinality]
                         applied <- foldM (\inner _ -> do
                             return $ I.InputApplication I.InputUnknownType inner $ I.InputTypeHole I.InputUnknownType)
                             constant nums
                         case applied of
                             I.InputApplication _ inner th -> return $ I.InputApplication inputToFill inner th
                             _ -> return applied
-                return $ I.InputValueDefinition inputToFill inner
+                return $ I.InputValueConstraint inputToFill inner
             UI.UnknownArgs -> error "cannot deal with unknown args"
     UI.IntegerLiteral value -> case value of
         Nothing -> literalError
@@ -104,6 +108,7 @@ buildInputTree e = case e of
 
 buildOutputTree :: O.InferedExpression -> UI.TypedValue
 buildOutputTree ex = case ex of
+    O.InferedValueDefinition name typ inner -> UI.TypedValueDefinition (inferedToUIType typ) name $ buildOutputTree inner
     O.InferedTypeHole name typ -> UI.TypedTypeHole (inferedToUIType typ) name
     O.InferedReference name typ -> UI.TypedReference (inferedToUIType typ) name []
     O.InferedLiteral name typ -> UI.TypedLiteral (inferedToUIType typ) name

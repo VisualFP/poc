@@ -14,7 +14,8 @@ data InferedType = InferedConstantType String
                  | InferedGeneric Int
                  deriving (Eq)
 
-data InferedExpression = InferedReference String InferedType
+data InferedExpression = InferedValueDefinition String InferedType InferedExpression
+                       | InferedReference String InferedType
                        | InferedApplication InferedExpression InferedExpression InferedType
                        | InferedTuple InferedExpression InferedExpression InferedType
                        | InferedLambda  (String, InferedType) InferedExpression InferedType
@@ -30,6 +31,7 @@ instance Show InferedType where
     show (InferedFunctionType from to) = show from ++ " -> " ++ show to
 
 instance Show InferedExpression where
+    show (InferedValueDefinition name t inner) = "(" ++ show inner ++ "-" ++ show name ++ ":" ++ show t ++ ")"
     show (InferedReference name t) = "(" ++ name ++ ":" ++ show t ++ ")"
     show (InferedLiteral name t) = "(" ++ name ++ ":" ++ show t ++ ")"
     show (InferedApplication left right t) = "(" ++ show left ++ " " ++ show right ++ "):" ++ show t
@@ -55,6 +57,7 @@ checkScopes ex =
             ElaboratedReference _ _ -> []
             ElaboratedLiteral _ _ -> []
             ElaboratedTypeHole _ _ -> []
+            ElaboratedValueDefinition _ name inner -> name : getDeclaredIdentifiers inner
             ElaboratedApplication _ left right -> getDeclaredIdentifiers left ++ getDeclaredIdentifiers right
             ElaboratedLambda _ (variableName, _) nested -> variableName : getDeclaredIdentifiers nested
             ElaboratedTuple _ left right -> getDeclaredIdentifiers left ++ getDeclaredIdentifiers right
@@ -91,6 +94,9 @@ resolveType typ resolvedTypes = case typ of
 
 zonk :: ElaboratedExpression -> ResolvedTypes -> InferenceResult
 zonk expr types = case expr of
+    ElaboratedValueDefinition typ name inner -> do
+        innerExpression <- zonk inner types
+        return $ InferedValueDefinition name (resolveType typ types) innerExpression
     ElaboratedReference typ name -> Right $ InferedReference name $ resolveType typ types
     ElaboratedLiteral typ name -> Right $ InferedLiteral name $ resolveType typ types
     ElaboratedTypeHole typ name -> Right $ InferedTypeHole name $ resolveType typ types
