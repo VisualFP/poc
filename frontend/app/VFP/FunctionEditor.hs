@@ -29,7 +29,7 @@ generateValueElement (TypedValueDefinition typ name inner) = do
   valueDefinitionElement <- UI.new #. "value-definition function-editor-element"
   definitionReference <-
     UI.new
-      # set UI.text name
+      #+ [UI.p # set UI.text name]
       #. "definition-reference"
       # set (UI.attr "title") (printFullType typ)
       # set UI.draggable True
@@ -60,7 +60,7 @@ generateValueElement (TypedLambda lambdaType (paramType, paramName) lambdaValue)
       #. "lambda-icon"
   lambdaParameter <-
     UI.new
-      # set UI.text paramName
+      #+ [UI.p # set UI.text paramName]
       #. "lambda-parameter"
       # set (UI.attr "title") (printFullType paramType)
       # set UI.draggable True
