@@ -7,7 +7,6 @@ import VFP.Inference.Unification
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 
-import Debug.Trace
 import Control.Monad.State.Strict
 
 data InferedType = InferedConstantType String

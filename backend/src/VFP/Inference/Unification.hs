@@ -21,7 +21,6 @@ import Control.Monad
 import Data.Tuple (swap)
 
 import Debug.Trace
-import Data.Monoid (All(getAll))
 import Data.List (find)
 
 {-
