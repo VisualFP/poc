@@ -30,7 +30,9 @@ test-suite VFP--test
     hs-source-dirs:   test
     other-modules:
         Inference.UnificationTests,
-        Inference.IntegrationTests
+        Inference.IntegrationTests,
+        UI.UIModelTests,
+        Translation.InferenceTranslationTest
     build-depends:
         base,
         containers,

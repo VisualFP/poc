@@ -5,20 +5,23 @@ import Data.Char
 import qualified Data.Set as Set
 
 type Identifier = String
-data Type = Primitive String
-          | Generic Int
-          | List Type
-          | Function Type Type deriving Eq
+
+data Type
+  = Primitive String
+  | Generic Int
+  | List Type
+  | Function Type Type
+  deriving (Eq)
 
 printGeneric :: Int -> String
 printGeneric num = [chr (ord 'a' - 1 + num)]
 
 printFullType :: Type -> String
 printFullType typ =
-  let generics = getGenerics typ in
-    if null generics
-    then printShortType typ
-    else "∀ " ++ unwords (map printGeneric $ Set.toList $ Set.fromList $ getGenerics typ) ++ " . " ++ printShortType typ
+  let generics = getGenerics typ
+   in if null generics
+        then printShortType typ
+        else "∀ " ++ unwords (map printGeneric $ Set.toList $ Set.fromList $ getGenerics typ) ++ " . " ++ printShortType typ
   where
     getGenerics :: Type -> [Int]
     getGenerics (Primitive _) = []
@@ -56,7 +59,7 @@ data UntypedValue = TypeHole
 
 data Value = Untyped UntypedValue | Typed TypedValue
 
-data InferenceResult = Error String | Success TypedValue deriving Show
+data InferenceResult = Error String | Success TypedValue deriving (Show)
 
 insertUntypedValueIntoTypeHole :: UntypedValue -> String -> TypedValue -> UntypedValue
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedReference refType refName refArgs) =

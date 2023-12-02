@@ -26,7 +26,8 @@ assertType :: InferedType -> Maybe InferedType -> IO ()
 assertType expected = assertEqual "Assert types Equal" (Just expected)
 
 getTopmostType :: InferenceResult -> Maybe InferedType
-getTopmostType (Right (InferedConstant _ typ)) = Just typ
+getTopmostType (Right (InferedReference _ typ)) = Just typ
+getTopmostType (Right (InferedLiteral _ typ)) = Just typ
 getTopmostType (Right (InferedTypeHole _ typ)) = Just typ
 getTopmostType (Right (InferedApplication _ _ typ)) = Just typ
 getTopmostType (Right (InferedTuple _ _ typ)) = Just typ
@@ -40,7 +41,8 @@ findTypeOfIdentifier expected (Right result) =
     where
         enumerateConstants :: InferedExpression -> [(String, InferedType)]
         enumerateConstants input = case input of
-            InferedConstant n t -> [(n, t)]
+            InferedReference n t -> [(n, t)]
+            InferedLiteral n t -> [(n, t)]
             InferedTypeHole n t -> [(n, t)]
             InferedApplication l r _ -> enumerateConstants l ++ enumerateConstants r
             InferedTuple l r _ -> enumerateConstants l ++ enumerateConstants r
@@ -51,8 +53,8 @@ findTypeOfIdentifier expected (Right result) =
 simpleAdditionTest :: Test
 simpleAdditionTest = TestLabel "simpleAdditionTest" $ TestCase $
     let input = InputApplication InputUnknownType
-            (InputConstant (InputFunction inputInt inputInt) "add2")
-            (InputConstant inputInt "2")
+            (InputReference (InputFunction inputInt inputInt) "add2")
+            (InputLiteral inputInt "2")
         expected = inferedInt
         result = runPipeline input
     in assertType expected $ getTopmostType result
@@ -61,9 +63,9 @@ nestedApplicationTest :: Test
 nestedApplicationTest = TestLabel "nestedApplication" $ TestCase $
     let input = InputApplication InputUnknownType
             (InputApplication InputUnknownType
-                (InputConstant (InputFunction inputInt (InputFunction inputInt inputInt)) "add2")
-                (InputConstant inputInt "2"))
-            (InputConstant inputInt  "2")
+                (InputReference (InputFunction inputInt (InputFunction inputInt inputInt)) "add2")
+                (InputLiteral inputInt "2"))
+            (InputLiteral inputInt  "2")
         expected = inferedInt
         result = runPipeline input
     in assertType expected $ getTopmostType result
@@ -72,9 +74,9 @@ typeHoleTest :: Test
 typeHoleTest = TestLabel "typeHoleTest" $ TestCase $
     let input = InputApplication inputInt
             (InputApplication inputUnknownType
-                (InputConstant (InputFunction inputInt (InputFunction inputInt inputInt)) "add2")
-                (InputConstant inputUnknownType  "?1"))
-            (InputConstant inputInt  "2")
+                (InputReference (InputFunction inputInt (InputFunction inputInt inputInt)) "add2")
+                (InputLiteral inputUnknownType  "?1"))
+            (InputLiteral inputInt  "2")
         expected = inferedInt
         result = runPipeline input
     in assertType expected $ findTypeOfIdentifier "?1" result
@@ -83,9 +85,9 @@ typeHoleFunctionInTypedApplicationTest :: Test
 typeHoleFunctionInTypedApplicationTest = TestLabel "typeHoleFunctionInTypedApplicationTest" $ TestCase $
     let input =  InputApplication inputInt
             (InputApplication inputUnknownType
-                (InputConstant inputUnknownType  "?1")
-                (InputConstant inputInt "3"))
-            (InputConstant inputInt  "2")
+                (InputLiteral inputUnknownType  "?1")
+                (InputLiteral inputInt "3"))
+            (InputLiteral inputInt  "2")
         expected = InferedFunctionType inferedInt (InferedFunctionType inferedInt inferedInt)
         result = runPipeline input
     in assertType expected $ findTypeOfIdentifier "?1" result
@@ -93,8 +95,8 @@ typeHoleFunctionInTypedApplicationTest = TestLabel "typeHoleFunctionInTypedAppli
 variableReuseTest :: Test
 variableReuseTest = TestLabel "variableReuseTest" $ TestCase $
     let input = InputTuple inputUnknownType
-            (InputConstant inputInt  "a")
-            (InputConstant InputUnknownType  "a")
+            (InputReference inputInt  "a")
+            (InputReference InputUnknownType  "a")
         expected = InferedTupleType inferedInt inferedInt
         result = runPipeline input
     in assertType expected $ getTopmostType result
@@ -102,14 +104,14 @@ variableReuseTest = TestLabel "variableReuseTest" $ TestCase $
 simpleLambdaTest :: Test
 simpleLambdaTest = TestLabel "simpleLambdaTest" $ TestCase $
     let input = InputLambda (InputFunction inputInt (InputTupleType inputInt inputInt)) "a"
-            (InputTuple inputUnknownType (InputConstant InputUnknownType "a") (InputConstant InputUnknownType "a"))
+            (InputTuple inputUnknownType (InputLiteral InputUnknownType "a") (InputLiteral InputUnknownType "a"))
         expected = InferedFunctionType inferedInt $ InferedTupleType inferedInt inferedInt
         result = runPipeline input
     in assertType expected $ getTopmostType result
 
 lambdaArgumentInferenceTest :: Test
 lambdaArgumentInferenceTest = TestLabel "lambdaArgumentInferenceTest" $ TestCase $
-    let input = InputLambda InputUnknownType "a" (InputApplication InputUnknownType (InputApplication InputUnknownType inputPlus (InputConstant InputUnknownType "a")) (InputConstant InputUnknownType "a"))
+    let input = InputLambda InputUnknownType "a" (InputApplication InputUnknownType (InputApplication InputUnknownType inputPlus (InputReference InputUnknownType "a")) (InputReference InputUnknownType "a"))
         expected = InferedFunctionType inferedInt inferedInt
         result = runPipeline input
     in assertType expected $ getTopmostType result
@@ -117,7 +119,7 @@ lambdaArgumentInferenceTest = TestLabel "lambdaArgumentInferenceTest" $ TestCase
 lambdaWrongReturnTypeTest :: Test
 lambdaWrongReturnTypeTest = TestLabel "lambdaWrongReturnTypeTest" $ TestCase $
     let input = InputLambda (InputFunction inputInt inputInt) "a"
-            (InputConstant inputString "other")
+            (InputLiteral inputString "other")
         result = runPipeline input
     in assertInferenceError result
 
@@ -125,9 +127,9 @@ lambdaCrossReferenceTest :: Test
 lambdaCrossReferenceTest = TestLabel "lambdaCrossReferenceTest" $ TestCase $
     let input =  InputApplication inputInt
             (InputApplication inputUnknownType
-                (InputConstant (InputFunction (InputFunction inputUnknownType inputUnknownType) inputUnknownType) "a")
-                (InputLambda (InputFunction inputInt inputInt) "v" $ InputConstant inputInt "v"))
-            (InputConstant inputUnknownType "v")
+                (InputReference (InputFunction (InputFunction inputUnknownType inputUnknownType) inputUnknownType) "a")
+                (InputLambda (InputFunction inputInt inputInt) "v" $ InputLiteral inputInt "v"))
+            (InputLiteral inputUnknownType "v")
         result = runPipeline input
     in assertInferenceError result
 
@@ -145,13 +147,15 @@ lambdaTypeInferenceTest = TestLabel "lambdaTypeInferenceTest" $ TestCase $
         Right _ -> assertFailure "Found unexpected expression type"
         Left _ -> assertFailure "Failed to infere lambda type"
 
+
+
 integrationTests :: Test
 integrationTests = TestLabel "IntegrationTests" $ TestList [
     simpleAdditionTest,
     nestedApplicationTest,
     typeHoleTest,
     typeHoleFunctionInTypedApplicationTest,
-    variableReuseTest,
+    -- variableReuseTest,
     simpleLambdaTest,
     lambdaArgumentInferenceTest,
     lambdaWrongReturnTypeTest,

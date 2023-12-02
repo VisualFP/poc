@@ -76,32 +76,32 @@ buildInputTree e = case e of
         countUICardinality (UI.Function _ to) = 1 + countUICardinality to
         countUICardinality _ = 0
 
-        getMaxGeneric :: Maybe UI.Type -> Int
-        getMaxGeneric uiType = case uiType of
-            Nothing -> 0
-            Just (UI.Primitive _) -> 0
-            Just (UI.Function from to) -> max (getMaxGeneric (Just from)) (getMaxGeneric (Just to))
-            Just (UI.List item) -> getMaxGeneric $ Just item
-            Just (UI.Generic num) -> num
+getMaxGeneric :: Maybe UI.Type -> Int
+getMaxGeneric uiType = case uiType of
+    Nothing -> 0
+    Just (UI.Primitive _) -> 0
+    Just (UI.Function from to) -> max (getMaxGeneric (Just from)) (getMaxGeneric (Just to))
+    Just (UI.List item) -> getMaxGeneric $ Just item
+    Just (UI.Generic num) -> num
 
-        uiToInputType :: Maybe UI.Type -> State InputTreeState I.InputType
-        uiToInputType typ = do
-                s <- get
-                let currentOffset = genericCounter s
-                let inputType = _uiToInputType currentOffset typ
-                let newOffset =  currentOffset + getMaxGeneric typ
-                put $ s{genericCounter = newOffset}
-                return inputType
-            where
-                _uiToInputType :: Int -> Maybe UI.Type -> I.InputType
-                _uiToInputType genericOffset uiType = case uiType of 
-                    Nothing -> I.InputUnknownType
-                    Just (UI.Primitive n) -> I.InputPrimitive n
-                    Just (UI.Function from to) -> I.InputFunction
-                        (_uiToInputType genericOffset $ Just from)
-                        (_uiToInputType genericOffset $ Just to)
-                    Just (UI.List item) -> I.InputList (_uiToInputType genericOffset $ Just item)
-                    Just (UI.Generic num) -> I.InputGeneric $ genericOffset + num
+uiToInputType :: Maybe UI.Type -> State InputTreeState I.InputType
+uiToInputType typ = do
+        s <- get
+        let currentOffset = genericCounter s
+        let inputType = _uiToInputType currentOffset typ
+        let newOffset =  currentOffset + getMaxGeneric typ
+        put $ s{genericCounter = newOffset}
+        return inputType
+    where
+        _uiToInputType :: Int -> Maybe UI.Type -> I.InputType
+        _uiToInputType genericOffset uiType = case uiType of 
+            Nothing -> I.InputUnknownType
+            Just (UI.Primitive n) -> I.InputPrimitive n
+            Just (UI.Function from to) -> I.InputFunction
+                (_uiToInputType genericOffset $ Just from)
+                (_uiToInputType genericOffset $ Just to)
+            Just (UI.List item) -> I.InputList (_uiToInputType genericOffset $ Just item)
+            Just (UI.Generic num) -> I.InputGeneric $ genericOffset + num
 
 buildOutputTree :: O.InferedExpression -> UI.TypedValue
 buildOutputTree ex = case ex of

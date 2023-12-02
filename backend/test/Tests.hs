@@ -4,10 +4,12 @@ import Test.HUnit
 import Inference.UnificationTests
 import Inference.IntegrationTests
 import System.Exit
+import UI.UIModelTests (uiModelTests)
+import Translation.InferenceTranslationTest (inferenceTranslationTests)
 
 main :: IO ()
 main = do
-  results <- runTestTT $ TestLabel "VFPInference-Tests" $ TestList [ unificationTests, integrationTests ]
+  results <- runTestTT $ TestLabel "VFPInference-Tests" $ TestList [ unificationTests, integrationTests, uiModelTests, inferenceTranslationTests ]
   if errors results + failures results == 0
     then
       exitSuccess

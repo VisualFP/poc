@@ -157,26 +157,26 @@ insertIntegerLiteralIntoValue targetTypeHoleId definedValue = do
   return $ Right $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId definedValue
 
 insertPreludeValueIntoValue :: String -> String -> TypedValue -> Either String UntypedValue
-insertPreludeValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue = case getPreludeValue typedValueNameToInsert of
+insertPreludeValueIntoValue valueNameToInsert targetTypeHoleId definedValue = case getPreludeValue valueNameToInsert of
   Right preludeValue -> Right $ insertUntypedValueIntoTypeHole preludeValue targetTypeHoleId definedValue
   Left e -> Left e
 
 getPreludeValue :: String -> Either String UntypedValue
-getPreludeValue typedValueNameToInsert = do
-  let preludeFunctionValue = removePrefix "prelude-" typedValueNameToInsert
-  let maybeTypedPreludeValue = getValueFromPrelude preludeFunctionValue
-  case maybeTypedPreludeValue of
-    Just typedPreludeValue -> Right typedPreludeValue
+getPreludeValue valueNameToInsert = do
+  let preludeFunctionValue = removePrefix "prelude-" valueNameToInsert
+  let maybePreludeValue = getValueFromPrelude preludeFunctionValue
+  case maybePreludeValue of
+    Just preludeValue -> Right preludeValue
     Nothing -> Left $ "Failed to locate prelude element " ++ preludeFunctionValue
 
 insertLambdaParamIntoValue :: String -> String -> TypedValue -> Either String UntypedValue
-insertLambdaParamIntoValue typedValueNameToInsert targetTypeHoleId definedValue = case getLambdaParameterValue typedValueNameToInsert definedValue of
+insertLambdaParamIntoValue valueNameToInsert targetTypeHoleId definedValue = case getLambdaParameterValue valueNameToInsert definedValue of
   Right lambdaParam -> Right $ insertUntypedValueIntoTypeHole lambdaParam targetTypeHoleId definedValue
   Left e -> Left e
 
 getLambdaParameterValue :: String -> TypedValue -> Either String UntypedValue
-getLambdaParameterValue typedValueNameToInsert definedValue = do
-  let lambdaParamName = removePrefix "lambdaParam-" typedValueNameToInsert
+getLambdaParameterValue valueNameToInsert definedValue = do
+  let lambdaParamName = removePrefix "lambdaParam-" valueNameToInsert
   let maybeLambdaParam = findLambdaParamInValue lambdaParamName definedValue
   case maybeLambdaParam of
     Just (paramType, lambdaParam) -> Right $ Reference (Just paramType) lambdaParam $ ToFill paramType
