@@ -31,7 +31,8 @@ test-suite VFP--test
     other-modules:
         Inference.UnificationTests,
         Inference.IntegrationTests,
-        UI.UIModelTests
+        UI.UIModelTests,
+        Translation.InferenceTranslationTest
     build-depends:
         base,
         containers,

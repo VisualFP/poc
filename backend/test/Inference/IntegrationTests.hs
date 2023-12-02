@@ -147,6 +147,8 @@ lambdaTypeInferenceTest = TestLabel "lambdaTypeInferenceTest" $ TestCase $
         Right _ -> assertFailure "Found unexpected expression type"
         Left _ -> assertFailure "Failed to infere lambda type"
 
+
+
 integrationTests :: Test
 integrationTests = TestLabel "IntegrationTests" $ TestList [
     simpleAdditionTest,
