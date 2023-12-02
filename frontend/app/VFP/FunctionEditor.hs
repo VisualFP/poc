@@ -129,6 +129,7 @@ replaceTypeHoleWithValue typedValueNameToInsert targetTypeHoleId definedValue = 
         | "literal-string" `isPrefixOf` typedValueNameToInsert = insertStringLiteralIntoValue targetTypeHoleId definedValue
         | "prelude-" `isPrefixOf` typedValueNameToInsert = return $ insertPreludeValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue
         | "lambdaParam-" `isPrefixOf` typedValueNameToInsert = return $ insertLambdaParamIntoValue typedValueNameToInsert targetTypeHoleId definedValue
+        | "definitionReference-" `isPrefixOf` typedValueNameToInsert = return $ insertDefinedValueIntoValue typedValueNameToInsert targetTypeHoleId definedValue
         | otherwise = return $ Left $ "Found unknown value name type " ++ typedValueNameToInsert
   untypedValueResult <- untypedValueResultAction
   case untypedValueResult of
@@ -169,6 +170,19 @@ getPreludeValue valueNameToInsert = do
     Just preludeValue -> Right preludeValue
     Nothing -> Left $ "Failed to locate prelude element " ++ preludeFunctionValue
 
+insertDefinedValueIntoValue :: String -> String -> TypedValue -> Either String UntypedValue
+insertDefinedValueIntoValue valueNameToInsert targetTypeHoleId definedValue = case getDefinedValue valueNameToInsert definedValue of
+  Right valueReference -> Right $ insertUntypedValueIntoTypeHole valueReference targetTypeHoleId definedValue
+  Left e -> Left e
+
+getDefinedValue :: String -> TypedValue -> Either String UntypedValue
+getDefinedValue valueNameToInsert definedValue = do
+  let name = removePrefix "definitionReference-" valueNameToInsert
+  let maybeDefinition = findDefinedValueInValue name definedValue
+  case maybeDefinition of
+    Just definitionType -> Right $ Reference (Just definitionType) name $ ToFill definitionType
+    Nothing -> Left $ "The definition " ++ name ++ " doesn't exist"
+
 insertLambdaParamIntoValue :: String -> String -> TypedValue -> Either String UntypedValue
 insertLambdaParamIntoValue valueNameToInsert targetTypeHoleId definedValue = case getLambdaParameterValue valueNameToInsert definedValue of
   Right lambdaParam -> Right $ insertUntypedValueIntoTypeHole lambdaParam targetTypeHoleId definedValue
@@ -179,7 +193,7 @@ getLambdaParameterValue valueNameToInsert definedValue = do
   let lambdaParamName = removePrefix "lambdaParam-" valueNameToInsert
   let maybeLambdaParam = findLambdaParamInValue lambdaParamName definedValue
   case maybeLambdaParam of
-    Just (paramType, lambdaParam) -> Right $ Reference (Just paramType) lambdaParam $ ToFill paramType
+    Just paramType -> Right $ Reference (Just paramType) lambdaParamName $ ToFill paramType
     Nothing -> Left $ "The parameter " ++ lambdaParamName ++ " doesn't exist"
 
 getValueFromPrelude :: String -> Maybe UntypedValue
@@ -190,9 +204,23 @@ isValueWithName name (Reference _ refName _) = refName == name
 isValueWithName name (Lambda {}) = name == "lambda"
 isValueWithName _ _ = False
 
-findLambdaParamInValue :: String -> TypedValue -> Maybe (Type, Identifier)
+findDefinedValueInValue :: String -> TypedValue -> Maybe Type
+findDefinedValueInValue valueName (TypedValueDefinition typ name inner) = if name == valueName
+  then Just typ
+  else  findDefinedValueInValue valueName inner
+findDefinedValueInValue valueName (TypedLambda _ _ lBody) = findDefinedValueInValue valueName lBody
+findDefinedValueInValue valueName (TypedReference _ _ args) = if null args
+  then Nothing
+  else let results = mapMaybe (findLambdaParamInValue valueName) args in
+    if null results
+      then Nothing
+      else Just $ head results
+findDefinedValueInValue _ (TypedTypeHole _ _) = Nothing
+findDefinedValueInValue _ (TypedLiteral _ _) = Nothing
+
+findLambdaParamInValue :: String -> TypedValue -> Maybe Type
 findLambdaParamInValue paramName (TypedLambda _ (lType, lName) lBody) = if paramName == lName
-  then Just (lType, lName)
+  then Just lType
   else findLambdaParamInValue paramName lBody
 findLambdaParamInValue _ (TypedTypeHole _ _) = Nothing
 findLambdaParamInValue paramName (TypedValueDefinition _ _ inner) =

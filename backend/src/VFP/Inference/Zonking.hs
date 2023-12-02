@@ -72,8 +72,13 @@ checkScopes ex =
             ElaboratedApplication _ left right -> do
                 _checkScopes left bannedIdentifiers
                 _checkScopes right bannedIdentifiers
+            ElaboratedTuple _ left right -> do
+                _checkScopes left bannedIdentifiers
+                _checkScopes right bannedIdentifiers
             ElaboratedLambda _ (variableName, _) nested ->
                 _checkScopes nested (filter (/= variableName) bannedIdentifiers)
+            ElaboratedValueDefinition _ name nested ->
+                _checkScopes nested (filter (/= name) bannedIdentifiers)
             _ -> Right ()
 
 resolveType :: UnificationType -> ResolvedTypes -> InferedType
