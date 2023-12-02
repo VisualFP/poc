@@ -18,6 +18,12 @@ import Debug.Trace
 
 data InputTreeState = InputTreeState{genericCounter::Int, lambdaParamCounter::Int}
 
+buildInputTreeForValueUnderConstruction :: UI.UntypedValueUnderConstruction -> State InputTreeState I.InputExpression
+buildInputTreeForValueUnderConstruction (UI.UntypedValueUnderConstruction valueType valueDefinition) = do
+    inputType <- uiToInputType $ Just valueType
+    inputValueDefinition <- buildInputTree valueDefinition
+    return $ I.InputValueDefinition inputType inputValueDefinition
+
 buildInputTree ::  UI.UntypedValue -> State InputTreeState I.InputExpression
 buildInputTree e = case e of
     UI.TypeHole -> return $ I.InputTypeHole I.InputUnknownType
@@ -75,32 +81,32 @@ buildInputTree e = case e of
         countUICardinality (UI.Function _ to) = 1 + countUICardinality to
         countUICardinality _ = 0
 
-        getMaxGeneric :: Maybe UI.Type -> Int
-        getMaxGeneric uiType = case uiType of
-            Nothing -> 0
-            Just (UI.Primitive _) -> 0
-            Just (UI.Function from to) -> max (getMaxGeneric (Just from)) (getMaxGeneric (Just to))
-            Just (UI.List item) -> getMaxGeneric $ Just item
-            Just (UI.Generic num) -> num
+getMaxGeneric :: Maybe UI.Type -> Int
+getMaxGeneric uiType = case uiType of
+    Nothing -> 0
+    Just (UI.Primitive _) -> 0
+    Just (UI.Function from to) -> max (getMaxGeneric (Just from)) (getMaxGeneric (Just to))
+    Just (UI.List item) -> getMaxGeneric $ Just item
+    Just (UI.Generic num) -> num
 
-        uiToInputType :: Maybe UI.Type -> State InputTreeState I.InputType
-        uiToInputType typ = do
-                s <- get
-                let currentOffset = genericCounter s
-                let inputType = _uiToInputType currentOffset typ
-                let newOffset =  currentOffset + getMaxGeneric typ
-                put $ s{genericCounter = newOffset}
-                return inputType
-            where
-                _uiToInputType :: Int -> Maybe UI.Type -> I.InputType
-                _uiToInputType genericOffset uiType = case uiType of 
-                    Nothing -> I.InputUnknownType
-                    Just (UI.Primitive n) -> I.InputPrimitive n
-                    Just (UI.Function from to) -> I.InputFunction
-                        (_uiToInputType genericOffset $ Just from)
-                        (_uiToInputType genericOffset $ Just to)
-                    Just (UI.List item) -> I.InputList (_uiToInputType genericOffset $ Just item)
-                    Just (UI.Generic num) -> I.InputGeneric $ genericOffset + num
+uiToInputType :: Maybe UI.Type -> State InputTreeState I.InputType
+uiToInputType typ = do
+        s <- get
+        let currentOffset = genericCounter s
+        let inputType = _uiToInputType currentOffset typ
+        let newOffset =  currentOffset + getMaxGeneric typ
+        put $ s{genericCounter = newOffset}
+        return inputType
+    where
+        _uiToInputType :: Int -> Maybe UI.Type -> I.InputType
+        _uiToInputType genericOffset uiType = case uiType of 
+            Nothing -> I.InputUnknownType
+            Just (UI.Primitive n) -> I.InputPrimitive n
+            Just (UI.Function from to) -> I.InputFunction
+                (_uiToInputType genericOffset $ Just from)
+                (_uiToInputType genericOffset $ Just to)
+            Just (UI.List item) -> I.InputList (_uiToInputType genericOffset $ Just item)
+            Just (UI.Generic num) -> I.InputGeneric $ genericOffset + num
 
 buildOutputTree :: O.InferedExpression -> UI.TypedValue
 buildOutputTree ex = case ex of
@@ -124,9 +130,9 @@ buildOutputTree ex = case ex of
         inferedToUIType (O.InferedListType item) = UI.List (inferedToUIType item)
         inferedToUIType (O.InferedTupleType _ _) = error "Tuples are not supported in the UI model"
 
-infere :: UI.UntypedValue -> UI.InferenceResult
-infere untyped =
-    let input = evalState (buildInputTree (trace ("Untyped: " ++ show untyped) untyped)) InputTreeState{genericCounter=0,lambdaParamCounter=0}
+infere :: UI.UntypedValueUnderConstruction -> UI.InferenceResult
+infere valueUnderConstruction =
+    let input = evalState (buildInputTreeForValueUnderConstruction (trace ("Untyped: " ++ show valueUnderConstruction) valueUnderConstruction)) InputTreeState{genericCounter=0,lambdaParamCounter=0}
         (elaboratedExpression, typeConstraints) = elaboration (trace ("Input: " ++ show input) input)
         unifcationResult = unification (trace ("Constraints: " ++ show typeConstraints) typeConstraints)
         zonked = zonking (trace ("ElaboratedExpression: " ++ show elaboratedExpression) elaboratedExpression) unifcationResult
