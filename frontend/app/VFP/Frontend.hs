@@ -31,7 +31,7 @@ setup window = do
   _ <- getBody window #+ [element appContainer]
   _ <- element sideBarContainer #+ renderSidebar WellKnown.prelude
 
-  let valueUnderConstruction = TypedValueDefinition (Generic 1) "func" $ TypedTypeHole (Generic 1) "0"
+  let valueUnderConstruction = TypedValueDefinition (Generic 1) "userDefinedFunction" $ TypedTypeHole (Generic 1) "0"
 
   resetButton <- createEditorResetButton
   _ <- element appContainer #+ [element resetButton]
