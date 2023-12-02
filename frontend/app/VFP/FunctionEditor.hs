@@ -201,4 +201,4 @@ generateRandomInt :: IO Int
 generateRandomInt = randomRIO (1,1000)
 
 generateRandomString :: IO String
-generateRandomString = flip replicateM (randomRIO ('A','z')) =<< randomRIO (1,32)
+generateRandomString = flip replicateM (randomRIO ('a','z')) =<< randomRIO (1,20)

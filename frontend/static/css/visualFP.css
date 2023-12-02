@@ -14,9 +14,24 @@ div {
     display: flex;
 }
 
+div[draggable="true"] {
+    cursor: grab;
+}
+
 #visual-fp-application-container {
     display: flex;
     flex-grow: 5;
+}
+
+#reset-button {
+    position: absolute;
+    right: 50px;
+    top: 25px;
+    padding: 5px;
+    border: 1px solid black;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: orchid;
 }
 
 #visual-fp-sidebar {
