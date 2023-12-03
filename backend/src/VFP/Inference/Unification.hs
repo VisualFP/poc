@@ -4,6 +4,7 @@
 {-# HLINT ignore "Use bimap" #-}
 {-# HLINT ignore "Use <$>" #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# HLINT ignore "Use forM_" #-}
 
 module VFP.Inference.Unification(
     UnificationType(..),
@@ -18,6 +19,9 @@ import qualified Data.Map.Strict as Map
 import Control.Monad.State.Lazy
 import Control.Monad
 import Data.Tuple (swap)
+
+import Debug.Trace
+import Data.List (find)
 
 {-
 Unregularities in SPJ slides:
@@ -56,6 +60,10 @@ typeIsVariable :: UnificationType -> Bool
 typeIsVariable (UnificationVariable _ _) = True
 typeIsVariable _ = False
 
+typeIsGeneric :: UnificationType -> Bool
+typeIsGeneric (UnificationVariable _ True) = True
+typeIsGeneric _ = False
+
 enumerateVariables :: UnificationType -> [UnificationType]
 enumerateVariables v = case v of
     UnificationConstantType _ -> []
@@ -90,10 +98,18 @@ mapConstraints mapping = do
     current <- get
     put current{constraints = mapping $ constraints current}
 
+substituteConstraintType :: UnificationType -> UnificationType -> UnificationState ()
+substituteConstraintType from to = mapConstraints $ Set.map (\(x,y) -> (substituteType from to x, substituteType from to y))
+
 mapResolvedTypes :: (ResolvedTypes -> ResolvedTypes) -> UnificationState ()
 mapResolvedTypes mapping = do
     current <- get
     put current{resolvedTypes = mapping $ resolvedTypes current}
+
+substituteResolvedType :: UnificationType -> UnificationType -> UnificationState ()
+substituteResolvedType from to = do
+    mapResolvedTypes $ Map.map (substituteType from to)
+    mapResolvedTypes $ Map.mapKeys (substituteType from to)
 
 getResolvedType :: UnificationType -> UnificationState (Maybe UnificationType)
 getResolvedType search = do
@@ -131,15 +147,20 @@ clearResolveds = do
     mapM_ (\(from, to) -> mapResolvedTypes $ Map.map (substituteType from to)) resolveds
     mapM_ (\(from, to) -> mapConstraints $ Set.map (\(x,y) -> (substituteType from to x, substituteType from to y))) resolveds
 
+getAllGenerics :: UnificationState [UnificationType]
+getAllGenerics = do
+    s <- get
+    return $ filter typeIsGeneric $
+            [ xs | (x,_) <- Set.toList $ constraints s, xs <- enumerateVariables x] ++
+            [ ys | (_,y) <- Set.toList $ constraints s, ys <- enumerateVariables y]
+
 promoteGeneric :: UnificationState ()
 promoteGeneric = do
-    s <- get
-    let potentials = [ xs | (x,_) <- Set.toList $ constraints s, xs <- enumerateVariables x] ++
-                     [ ys | (_,y) <- Set.toList $ constraints s, ys <- enumerateVariables y]
-    applyPotential potentials
+    generics <- getAllGenerics
+    _promoteGeneric generics
     where 
-        applyPotential :: [UnificationType] -> UnificationState ()
-        applyPotential ps = case ps of
+        _promoteGeneric :: [UnificationType] -> UnificationState ()
+        _promoteGeneric ps = case ps of
             (UnificationVariable name True):_ -> do
                 s <- get
                 let current = UnificationVariable name True
@@ -148,8 +169,29 @@ promoteGeneric = do
                 put $ s{promotedGenerics = promotedNumber + 1}
                 mapConstraints $ Set.map (\(x,y) -> (substituteType current genericType x, substituteType current genericType y))
                 mapResolvedTypes $ Map.insert current genericType
-            _:rest -> applyPotential rest
+            _:rest -> _promoteGeneric rest
             _ -> return ()
+
+downgradeGeneric :: UnificationState ()
+downgradeGeneric = do
+    s <- get
+    case find isGenericDowngradeable $ Set.toList $ constraints s of
+        Nothing -> return ()
+        Just (t,_) -> _downgradeGeneric t
+    where
+        isGenericDowngradeable :: TypeConstraint -> Bool
+        isGenericDowngradeable (UnificationConstantType ('G':_), UnificationConstantType _) = True
+        isGenericDowngradeable (UnificationConstantType ('G':_), UnificationConstructedType _ _) = True
+        isGenericDowngradeable _ = False
+
+        _downgradeGeneric :: UnificationType -> UnificationState ()
+        _downgradeGeneric (UnificationConstantType ('G':rstName)) = do
+            let name = 'G':rstName
+                current = UnificationConstantType name
+                new = UnificationVariable name True
+            substituteConstraintType current new
+            substituteResolvedType current new
+        _downgradeGeneric _ = return ()
 
 processConstraint :: TypeConstraint -> UnificationState ()
 processConstraint (leftC, rightC) = do
@@ -201,14 +243,18 @@ untilStable action = do
     unless (original == next) $ untilStable action
 
 unifyUntilStable :: UnificationState ()
-unifyUntilStable = untilStable $ do
-    untilStable (do
-        augmentConstraints
-        clearResolveds
-        untilStable processConstraints)
-    promoteGeneric
+unifyUntilStable = untilStable(do
+    untilStable(do
+        untilStable(do
+            augmentConstraints
+            clearResolveds
+            untilStable processConstraints)
+        promoteGeneric)
+    downgradeGeneric)
 
 unification :: TypeConstraintConjunction -> (TypeConstraintConjunction, ResolvedTypes)
 unification initialConstraints =
-    let result = execState unifyUntilStable $ initialStateValue initialConstraints
-    in (constraints result, resolvedTypes result)
+    let resultState = execState unifyUntilStable $ initialStateValue initialConstraints
+        _residuals = constraints resultState
+        _resolvedTypes = resolvedTypes resultState
+    in (trace ("Residual Constraints: " ++ show _residuals) _residuals, trace ("ResolvedTypes: " ++ show _resolvedTypes) _resolvedTypes)

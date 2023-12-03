@@ -18,25 +18,20 @@ import Debug.Trace
 
 data InputTreeState = InputTreeState{genericCounter::Int, lambdaParamCounter::Int}
 
-buildInputTreeForValueUnderConstruction :: UI.UntypedValueUnderConstruction -> State InputTreeState I.InputExpression
-buildInputTreeForValueUnderConstruction (UI.UntypedValueUnderConstruction valueType valueDefinition) = do
-    inputType <- uiToInputType $ Just valueType
-    inputValueDefinition <- buildInputTree valueDefinition
-    return $ I.InputValueDefinition inputType inputValueDefinition
-
 buildInputTree ::  UI.UntypedValue -> State InputTreeState I.InputExpression
 buildInputTree e = case e of
     UI.TypeHole -> return $ I.InputTypeHole I.InputUnknownType
-    UI.Lambda typ lambdaValue -> do
+    UI.ValueDefinition typ name inner -> do
+        inputType <- uiToInputType typ
+        inputInner <- buildInputTree inner 
+        return $ I.InputValueDefinition inputType name inputInner
+    UI.Lambda typ inner -> do
         s <- get
         let paramName = [chr (ord 'i' + lambdaParamCounter s)]
         put $ s{lambdaParamCounter = lambdaParamCounter s + 1}
         inputType <- uiToInputType typ
-        case lambdaValue of
-            UI.LambdaValue inner -> do
-                _inner <- buildInputTree inner
-                return $ I.InputLambda inputType paramName _inner
-            UI.ValueToFill -> return $ I.InputLambda inputType paramName $ I.InputTypeHole I.InputUnknownType
+        _inner <- buildInputTree inner
+        return $ I.InputLambda inputType paramName _inner
     UI.Reference typ name args -> do
         inputType <- uiToInputType typ
         let constant = I.InputReference inputType name
@@ -54,14 +49,14 @@ buildInputTree e = case e of
                 inner <- if inputCardinality <= toFillCardinality
                     then return constant
                     else do
-                        let nums = [1..inputCardinality - toFillCardinality ]
+                        let nums = [1..inputCardinality - toFillCardinality]
                         applied <- foldM (\inner _ -> do
                             return $ I.InputApplication I.InputUnknownType inner $ I.InputTypeHole I.InputUnknownType)
                             constant nums
                         case applied of
                             I.InputApplication _ inner th -> return $ I.InputApplication inputToFill inner th
                             _ -> return applied
-                return $ I.InputValueDefinition inputToFill inner
+                return $ I.InputValueConstraint inputToFill inner
             UI.UnknownArgs -> error "cannot deal with unknown args"
     UI.IntegerLiteral value -> case value of
         Nothing -> literalError
@@ -110,6 +105,7 @@ uiToInputType typ = do
 
 buildOutputTree :: O.InferedExpression -> UI.TypedValue
 buildOutputTree ex = case ex of
+    O.InferedValueDefinition name typ inner -> UI.TypedValueDefinition (inferedToUIType typ) name $ buildOutputTree inner
     O.InferedTypeHole name typ -> UI.TypedTypeHole (inferedToUIType typ) name
     O.InferedReference name typ -> UI.TypedReference (inferedToUIType typ) name []
     O.InferedLiteral name typ -> UI.TypedLiteral (inferedToUIType typ) name
@@ -130,12 +126,12 @@ buildOutputTree ex = case ex of
         inferedToUIType (O.InferedListType item) = UI.List (inferedToUIType item)
         inferedToUIType (O.InferedTupleType _ _) = error "Tuples are not supported in the UI model"
 
-infere :: UI.UntypedValueUnderConstruction -> UI.InferenceResult
-infere valueUnderConstruction =
-    let input = evalState (buildInputTreeForValueUnderConstruction (trace ("Untyped: " ++ show valueUnderConstruction) valueUnderConstruction)) InputTreeState{genericCounter=0,lambdaParamCounter=0}
-        (elaboratedExpression, typeConstraints) = elaboration (trace ("Input: " ++ show input) input)
-        unifcationResult = unification (trace ("Constraints: " ++ show typeConstraints) typeConstraints)
-        zonked = zonking (trace ("ElaboratedExpression: " ++ show elaboratedExpression) elaboratedExpression) unifcationResult
+infere :: UI.UntypedValue -> UI.InferenceResult
+infere untyped =
+    let input = evalState (buildInputTree (trace ("Untyped: " ++ show untyped) untyped)) InputTreeState{genericCounter=0,lambdaParamCounter=0}
+        (elaboratedExpression, typeConstraints) = elaboration input
+        unifcationResult = unification typeConstraints
+        zonked = zonking elaboratedExpression unifcationResult
     in case trace ("Zonked: " ++ show zonked) zonked of
         Left e -> UI.Error e
         Right r -> UI.Success $ buildOutputTree r

@@ -3,7 +3,6 @@ module VFP.UI.UIModel where
 
 import Data.Char
 import qualified Data.Set as Set
-import Data.Either (partitionEithers)
 
 type Identifier = String
 
@@ -40,57 +39,46 @@ printShortType (Function from to) = printShortType from ++ " → " ++ printShort
 instance Show Type where
   show = printShortType
 
-data ValueUnderConstruction = ValueUnderConstruction {
-  valueName :: String,
-  valueDefinition :: TypedValue,
-  valueType :: Type
-} deriving Show
-
-data UntypedValueUnderConstruction = UntypedValueUnderConstruction Type UntypedValue deriving (Show)
-
-data TypedValue
-  = TypedTypeHole Type Identifier -- Identifier = Increasing, inkonsistent number
-  | TypedLambda Type (Type, Identifier) TypedValue
-  | TypedReference Type Identifier [TypedValue]
-  | TypedLiteral Type String
-  deriving (Show, Eq)
+data TypedValue = TypedTypeHole Type Identifier -- Identifier = Increasing, inkonsistent number
+                | TypedLambda Type (Type, Identifier) TypedValue
+                | TypedReference Type Identifier [TypedValue]
+                | TypedLiteral Type String
+                | TypedValueDefinition Type String TypedValue
+                deriving Show
 
 --                      TypeHole      FilledArgs
-data UntypedArguments = ToFill Type | ArgumentList [UntypedValue] | UnknownArgs deriving (Show, Eq)
+data UntypedArguments = ToFill Type | ArgumentList [UntypedValue] | UnknownArgs deriving Show
 
-data UntypedLambdaValue = ValueToFill | LambdaValue UntypedValue deriving (Show, Eq)
-
-data UntypedValue
-  = TypeHole
-  | Lambda (Maybe Type) UntypedLambdaValue
-  | Reference (Maybe Type) Identifier UntypedArguments
-  | IntegerLiteral (Maybe String)
-  | StringLiteral (Maybe String)
-  deriving (Show, Eq)
+data UntypedValue = TypeHole
+                  | Lambda (Maybe Type) UntypedValue
+                  | Reference (Maybe Type) Identifier UntypedArguments
+                  | IntegerLiteral (Maybe String)
+                  | StringLiteral (Maybe String)
+                  | ValueDefinition (Maybe Type) String UntypedValue
+                  deriving Show
 
 data Value = Untyped UntypedValue | Typed TypedValue
 
 data InferenceResult = Error String | Success TypedValue deriving (Show)
 
-insertUntypedValueIntoTypeHole :: UntypedValue -> String -> TypedValue -> Either String UntypedValue
-insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "int") refName) = Right $ IntegerLiteral $ Just refName
-insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "string") refName) = Right $ StringLiteral $ Just refName
-insertUntypedValueIntoTypeHole _ _ (TypedLiteral typ _) = Left $ "Unknown literal type " ++ show typ
+insertUntypedValueIntoTypeHole :: UntypedValue -> String -> TypedValue -> UntypedValue
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedReference refType refName refArgs) =
-  let (errors, args) = partitionEithers $ map (insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId) refArgs in
-    case errors of
-      [] -> Right $ Reference (Just refType) refName (ArgumentList args)
-      (e:_) -> Left e
+  Reference (Just refType) refName (ArgumentList (map (insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId) refArgs))
+insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "int") refName) =
+  IntegerLiteral $ Just refName
+insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "string") refName) =
+  StringLiteral $ Just refName
+insertUntypedValueIntoTypeHole _ _ (TypedLiteral typ _) = error $ "Unknown literal type " ++ show typ
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedLambda lambdaType _ lambdaValue) =
-  case insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId lambdaValue of
-    Right lambdaBody -> Right $ Lambda (Just lambdaType) (LambdaValue lambdaBody)
-    Left e -> Left e
-insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole typeHoleType typeHoleId) =
+  Lambda (Just lambdaType) (insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId lambdaValue)
+insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedValueDefinition typ name inner) =
+  ValueDefinition (Just typ) name $ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId inner
+insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole typeHoleType typeHoleId) = do
   if typeHoleId == targetTypeHoleId
     then case valueToInsert of
-      Reference typeToInsert identifiertToInsert _ -> Right $ Reference typeToInsert identifiertToInsert (ToFill typeHoleType)
-      IntegerLiteral value -> Right $ IntegerLiteral value
-      StringLiteral value -> Right $ StringLiteral value
-      Lambda _ _ -> Right $ Lambda (Just typeHoleType) ValueToFill
-      TypeHole -> Right TypeHole
-    else Right TypeHole
+      Reference typeToInsert identifiertToInsert _ -> Reference typeToInsert identifiertToInsert (ToFill typeHoleType)
+      IntegerLiteral value -> IntegerLiteral value 
+      StringLiteral value -> StringLiteral value 
+      Lambda _ _ -> Lambda (Just typeHoleType) TypeHole
+      _ -> TypeHole
+    else TypeHole
