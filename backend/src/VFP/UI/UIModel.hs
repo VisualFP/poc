@@ -53,6 +53,7 @@ data UntypedValue = TypeHole
                   | Lambda (Maybe Type) UntypedValue
                   | Reference (Maybe Type) Identifier UntypedArguments
                   | IntegerLiteral (Maybe String)
+                  | BooleanLiteral String
                   | StringLiteral (Maybe String)
                   | ValueDefinition (Maybe Type) String UntypedValue
                   deriving Show
@@ -64,9 +65,11 @@ data InferenceResult = Error String | Success TypedValue deriving (Show)
 insertUntypedValueIntoTypeHole :: UntypedValue -> String -> TypedValue -> UntypedValue
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedReference refType refName refArgs) =
   Reference (Just refType) refName (ArgumentList (map (insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId) refArgs))
-insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "int") refName) =
+insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "Int") refName) =
   IntegerLiteral $ Just refName
-insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "string") refName) =
+insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "Bool") refName) =
+  BooleanLiteral refName
+insertUntypedValueIntoTypeHole _ _ (TypedLiteral (Primitive "String") refName) =
   StringLiteral $ Just refName
 insertUntypedValueIntoTypeHole _ _ (TypedLiteral typ _) = error $ "Unknown literal type " ++ show typ
 insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedLambda lambdaType _ lambdaValue) =
@@ -78,6 +81,7 @@ insertUntypedValueIntoTypeHole valueToInsert targetTypeHoleId (TypedTypeHole typ
     then case valueToInsert of
       Reference typeToInsert identifiertToInsert _ -> Reference typeToInsert identifiertToInsert (ToFill typeHoleType)
       IntegerLiteral value -> IntegerLiteral value 
+      BooleanLiteral value -> BooleanLiteral value
       StringLiteral value -> StringLiteral value 
       Lambda _ _ -> Lambda (Just typeHoleType) TypeHole
       _ -> TypeHole

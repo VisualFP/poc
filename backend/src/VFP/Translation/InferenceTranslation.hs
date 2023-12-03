@@ -60,10 +60,11 @@ buildInputTree e = case e of
             UI.UnknownArgs -> error "cannot deal with unknown args"
     UI.IntegerLiteral value -> case value of
         Nothing -> literalError
-        Just lit -> return $ I.InputLiteral (I.InputPrimitive "int") (filter (/= '"') $ show lit)
+        Just lit -> return $ I.InputLiteral (I.InputPrimitive "Int") (filter (/= '"') $ show lit)
+    UI.BooleanLiteral value -> return $ I.InputLiteral (I.InputPrimitive "Bool") value
     UI.StringLiteral value -> case value of
         Nothing -> literalError
-        Just lit -> return $ I.InputLiteral (I.InputPrimitive "string") lit
+        Just lit -> return $ I.InputLiteral (I.InputPrimitive "String") lit
 
     where
         literalError = error "literals must be filled in the UI layer"

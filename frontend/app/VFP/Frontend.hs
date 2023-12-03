@@ -8,6 +8,7 @@ import VFP.FunctionEditor (FunctionDroppedEvent (..), getFunctionDroppedEvents, 
 import Control.Monad (unless)
 import VFP.UI.UIModel
 import qualified VFP.Translation.WellKnown as WellKnown
+import Data.Char (toLower)
 
 start :: Int -> String -> IO ()
 start port dir = startGUI
@@ -103,6 +104,15 @@ renderSidebarValueBlock (IntegerLiteral _) = do
                     # set UI.dragData "literal-integer"
   _ <- element literalElement #+ [UI.p # set UI.text "Integer Literal"]
   literalTypeElement <- UI.p # set UI.text (show WellKnown.int)
+                             #. "value-type"
+  _ <- element literalElement #+ [element literalTypeElement]
+  return literalElement
+renderSidebarValueBlock (BooleanLiteral val) = do
+  literalElement <- UI.div #. "value literal literal-boolean"
+                    # set UI.draggable True
+                    # set UI.dragData ("literal-boolean-" ++ map toLower val)
+  _ <- element literalElement #+ [UI.p # set UI.text val]
+  literalTypeElement <- UI.p # set UI.text (show WellKnown.bool)
                              #. "value-type"
   _ <- element literalElement #+ [element literalTypeElement]
   return literalElement
