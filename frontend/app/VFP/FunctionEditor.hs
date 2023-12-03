@@ -14,8 +14,6 @@ import qualified VFP.Translation.WellKnown as WellKnown
 import Control.Monad (replicateM)
 import System.Random
 
-import Debug.Trace
-
 data FunctionDroppedEvent = FunctionDroppedEvent
   { functionDropTargetId :: String,
     functionDragData :: UI.DragData
