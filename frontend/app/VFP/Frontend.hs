@@ -4,10 +4,11 @@ module VFP.Frontend where
 
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
-import VFP.FunctionEditor (FunctionDroppedEvent (..), generateValueDefinitionElement, getFunctionDroppedEvents, getTypeHolesFromValue, replaceTypeHoleWithValue, ValueDefinitionUpdateResult (..))
+import VFP.FunctionEditor (FunctionDroppedEvent (..), getFunctionDroppedEvents, getTypeHolesFromValue, replaceTypeHoleWithValue, ValueDefinitionUpdateResult (..), generateValueElement)
 import Control.Monad (unless)
 import VFP.UI.UIModel
 import qualified VFP.Translation.WellKnown as WellKnown
+import Data.Char (toLower)
 
 start :: Int -> String -> IO ()
 start port dir = startGUI
@@ -31,11 +32,7 @@ setup window = do
   _ <- getBody window #+ [element appContainer]
   _ <- element sideBarContainer #+ renderSidebar WellKnown.prelude
 
-  let valueUnderConstruction = ValueUnderConstruction {
-    valueName = "Test",
-    valueDefinition = TypedTypeHole WellKnown.string "0",
-    valueType = WellKnown.string
-  }
+  let valueUnderConstruction = TypedValueDefinition (Generic 1) "userDefinedFunction" $ TypedTypeHole (Generic 1) "0"
 
   resetButton <- createEditorResetButton
   _ <- element appContainer #+ [element resetButton]
@@ -43,12 +40,12 @@ setup window = do
 
   resetEditorAndRenderFunction window functionEditorContainer valueUnderConstruction
 
-resetEditorAndRenderFunction :: Window -> Element -> ValueUnderConstruction -> UI ()
+resetEditorAndRenderFunction :: Window -> Element -> TypedValue -> UI ()
 resetEditorAndRenderFunction window functionEditor valueUnderConstruction = do
   runFunction $ ffi $ "console.log('render function: " ++ show valueUnderConstruction ++ "')"
   resetEditor functionEditor
   runFunction $ ffi $ "console.log('got value " ++ show valueUnderConstruction ++ "')"
-  let functionElement = generateValueDefinitionElement (valueName valueUnderConstruction) (valueType valueUnderConstruction) (valueDefinition valueUnderConstruction)
+  let functionElement = generateValueElement valueUnderConstruction
   _ <- element functionEditor #+ [functionElement]
   registerFunctionDroppedEvents window functionEditor valueUnderConstruction
   return ()
@@ -58,9 +55,9 @@ resetEditor functionEditor = do
   _ <- element functionEditor # set children []
   return ()
 
-registerFunctionDroppedEvents :: Window -> Element -> ValueUnderConstruction -> UI ()
+registerFunctionDroppedEvents :: Window -> Element -> TypedValue -> UI ()
 registerFunctionDroppedEvents window functionEditor valueUnderConstruction = do
-  let typeHoles = getTypeHolesFromValue $ valueDefinition valueUnderConstruction
+  let typeHoles = getTypeHolesFromValue valueUnderConstruction
   runFunction $ ffi $ "console.log('found " ++ show (length typeHoles) ++ " type holes')"
   events <- getFunctionDroppedEvents window typeHoles
   if not (null events)
@@ -70,14 +67,14 @@ registerFunctionDroppedEvents window functionEditor valueUnderConstruction = do
     else do
       unless (null typeHoles) $ runFunction $ ffi "console.error('failed to define drop events')"
 
-registerFunctionDroppedEvent :: Window -> Element -> ValueUnderConstruction -> Event FunctionDroppedEvent -> UI ()
+registerFunctionDroppedEvent :: Window -> Element -> TypedValue -> Event FunctionDroppedEvent -> UI ()
 registerFunctionDroppedEvent window functionEditor valueUnderConstruction event = do
   _ <- onEvent event $ \dropEvent -> do
     runFunction $ ffi "console.log('dropped value')"
     updateResult <- replaceTypeHoleWithValue (functionDragData dropEvent) (functionDropTargetId dropEvent) valueUnderConstruction
     case updateResult of
       UpdateSuccess updatedValueDefinition -> do
-        resetEditorAndRenderFunction window functionEditor ValueUnderConstruction { valueName = valueName valueUnderConstruction, valueType = valueType valueUnderConstruction, valueDefinition = updatedValueDefinition }
+        resetEditorAndRenderFunction window functionEditor updatedValueDefinition
       UpdateError e -> do
         _ <- element functionEditor #+ [createErrorMessage e]
         runFunction $ ffi $ "console.error('Failed to update function: " ++ e ++ "')"
@@ -113,7 +110,7 @@ renderSidebarValueBlock (IntegerLiteral _) = do
 renderSidebarValueBlock (BooleanLiteral val) = do
   literalElement <- UI.div #. "value literal literal-boolean"
                     # set UI.draggable True
-                    # set UI.dragData ("literal-boolean" ++ val)
+                    # set UI.dragData ("literal-boolean-" ++ map toLower val)
   _ <- element literalElement #+ [UI.p # set UI.text val]
   literalTypeElement <- UI.p # set UI.text (show WellKnown.bool)
                              #. "value-type"

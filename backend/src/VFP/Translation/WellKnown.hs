@@ -19,7 +19,7 @@ generalGroup :: PreludeGroup
 generalGroup = PreludeGroup {
     name = "General",
     values = [
-        Lambda (Just $ Function (Generic 1) (Generic 2)) (LambdaValue TypeHole),
+        Lambda (Just $ Function (Generic 1) (Generic 2)) TypeHole,
         Reference (Just $ Function (Generic 1) (Generic 1)) "identity" UnknownArgs
     ]
 }
@@ -30,6 +30,7 @@ boolGroup = PreludeGroup {
     values = [
         BooleanLiteral "True",
         BooleanLiteral "False",
+        Reference (Just $ Function bool (Function (Generic 1) (Function (Generic 1) (Generic 1)))) "if" UnknownArgs,
         Reference (Just $ Function bool (Function bool bool)) "and" UnknownArgs,
         Reference (Just $ Function bool (Function bool bool)) "or" UnknownArgs,
         Reference (Just $ Function bool string) "boolToString" UnknownArgs 
