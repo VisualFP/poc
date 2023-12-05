@@ -9,8 +9,9 @@ library
     exposed-modules:
         VFP.UI.UIModel,
         VFP.Translation.Inference,
-        VFP.Translation.TreeBuilderInput,
-        VFP.Translation.TreeBuilderOutput,
+        VFP.Translation.TranslateToHaskellSource,
+        VFP.Translation.TranslateUntypedToInput,
+        VFP.Translation.TranslateInferedToTyped,
         VFP.Translation.WellKnown,
         VFP.Inference.Elaboration,
         VFP.Inference.Example,
@@ -25,14 +26,14 @@ library
     default-language:   Haskell2010
     ghc-options: -Wall
 
-
 test-suite VFP--test
     type:             exitcode-stdio-1.0
     main-is:          Tests.hs
     hs-source-dirs:   test
     other-modules:
         Inference.UnificationTests,
-        Inference.IntegrationTests,
+        Inference.InferenceComponentTests,
+        IntegrationTests,
         UI.UIModelTests,
         Translation.InferenceTranslationTest
     build-depends:

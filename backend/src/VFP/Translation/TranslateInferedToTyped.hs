@@ -1,4 +1,4 @@
-module VFP.Translation.TreeBuilderOutput(buildOutputTree) where
+module VFP.Translation.TranslateInferedToTyped(translateInferedToTyped) where
 
 import qualified VFP.UI.UIModel as UI
 import qualified VFP.Inference.Zonking as O
@@ -25,3 +25,7 @@ buildOutputTree ex = case ex of
     O.InferedLambda (paramName, paramType) inner typ ->
         UI.TypedLambda (inferedToUIType typ) (inferedToUIType paramType, paramName) $ buildOutputTree inner
     O.InferedTuple {} -> error "Tuples are not supported in the UI model"
+
+
+translateInferedToTyped :: O.InferedExpression -> UI.TypedValue
+translateInferedToTyped = buildOutputTree

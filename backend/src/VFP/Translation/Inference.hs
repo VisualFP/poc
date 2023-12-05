@@ -4,8 +4,8 @@
 {-# HLINT ignore "Use <$>" #-}
 module VFP.Translation.Inference where
 
-import VFP.Translation.TreeBuilderOutput
-import VFP.Translation.TreeBuilderInput
+import VFP.Translation.TranslateUntypedToInput
+import VFP.Translation.TranslateInferedToTyped
 
 import VFP.UI.UIModel
 import VFP.Inference.Elaboration (elaboration)
@@ -14,10 +14,10 @@ import VFP.Inference.Zonking (zonking)
 
 infere :: UntypedValue -> InferenceResult
 infere untyped =
-    let inputTree = buildInputTree untyped
+    let inputTree = translateUntypedToInput untyped
         (elaboratedExpression, typeConstraints) = elaboration inputTree
         unifcationResult = unification typeConstraints
         zonked = zonking elaboratedExpression unifcationResult
     in case zonked of
         Left e -> Error e
-        Right r -> Success $ buildOutputTree r
+        Right r -> Success $ translateInferedToTyped r

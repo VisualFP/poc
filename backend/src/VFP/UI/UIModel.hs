@@ -39,7 +39,7 @@ printShortType (Function from to) = printShortType from ++ " → " ++ printShort
 instance Show Type where
   show = printShortType
 
-data TypedValue = TypedTypeHole Type Identifier -- Identifier = Increasing, inkonsistent number
+data TypedValue = TypedTypeHole Type Identifier
                 | TypedLambda Type (Type, Identifier) TypedValue
                 | TypedReference Type Identifier [TypedValue]
                 | TypedLiteral Type String

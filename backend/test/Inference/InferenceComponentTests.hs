@@ -1,6 +1,6 @@
 -- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
 
-module Inference.IntegrationTests where
+module Inference.InferenceComponentTests where
 
 import VFP.Inference.Example
 import VFP.Inference.InputModel
@@ -148,8 +148,8 @@ lambdaTypeInferenceTest = TestLabel "lambdaTypeInferenceTest" $ TestCase $
         Right _ -> assertFailure "Found unexpected expression type"
         Left _ -> assertFailure "Failed to infere lambda type"
 
-integrationTests :: Test
-integrationTests = TestLabel "IntegrationTests" $ TestList [
+inferenceComponentTests :: Test
+inferenceComponentTests = TestLabel "IntegrationTests" $ TestList [
     simpleAdditionTest,
     nestedApplicationTest,
     typeHoleTest,

@@ -1,4 +1,4 @@
-module VFP.Translation.TreeBuilderInput(buildInputTree) where
+module VFP.Translation.TranslateUntypedToInput(translateUntypedToInput) where
 
 import qualified VFP.UI.UIModel as UI
 import qualified VFP.Inference.InputModel as I
@@ -43,19 +43,19 @@ uiToInputType typ = do
 
 data InputTreeState = InputTreeState {genericCounter::Int, lambdaParamCounter::Int}
 
-_buildInputTree ::  UI.UntypedValue -> State InputTreeState I.InputExpression
-_buildInputTree e = case e of
+buildInputTree ::  UI.UntypedValue -> State InputTreeState I.InputExpression
+buildInputTree e = case e of
     UI.TypeHole -> return $ I.InputTypeHole I.InputUnknownType
     UI.ValueDefinition typ name inner -> do
         inputType <- uiToInputType typ
-        inputInner <- _buildInputTree inner 
+        inputInner <- buildInputTree inner 
         return $ I.InputValueDefinition inputType name inputInner
     UI.Lambda typ inner -> do
         s <- get
         let paramName = [chr (ord 'i' + lambdaParamCounter s)]
         put $ s{lambdaParamCounter = lambdaParamCounter s + 1}
         inputType <- uiToInputType typ
-        _inner <- _buildInputTree inner
+        _inner <- buildInputTree inner
         return $ I.InputLambda inputType paramName _inner
     UI.Reference typ name args -> do
         inputType <- uiToInputType typ
@@ -64,7 +64,7 @@ _buildInputTree e = case e of
         case args of
             UI.ArgumentList _args ->
                 foldM (\inner arg -> do
-                    argInput <- _buildInputTree arg
+                    argInput <- buildInputTree arg
                     return $ I.InputApplication I.InputUnknownType inner argInput)
                     constant _args
             UI.ToFill toFill -> do
@@ -93,5 +93,6 @@ _buildInputTree e = case e of
     where
         literalError = error "literals must be filled in the UI layer"
 
-buildInputTree :: UI.UntypedValue -> I.InputExpression
-buildInputTree input = evalState (_buildInputTree input) InputTreeState{genericCounter=0,lambdaParamCounter=0}
+
+translateUntypedToInput :: UI.UntypedValue -> I.InputExpression
+translateUntypedToInput input = evalState (buildInputTree input) InputTreeState{genericCounter=0,lambdaParamCounter=0}
