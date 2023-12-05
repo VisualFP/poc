@@ -6,7 +6,7 @@ import Data.Foldable (find)
 import Data.Maybe (catMaybes, mapMaybe, fromMaybe)
 import qualified Graphics.UI.Threepenny as UI
 import Graphics.UI.Threepenny.Core
-import VFP.Translation.InferenceTranslation (infere)
+import VFP.Translation.Inference (infere)
 import VFP.Translation.WellKnown (prelude)
 import VFP.UI.UIModel
 import Data.List (isPrefixOf, stripPrefix)

@@ -8,7 +8,9 @@ copyright:          2023 Lukas Streckeisen & Jann Flepp
 library
     exposed-modules:
         VFP.UI.UIModel,
-        VFP.Translation.InferenceTranslation,
+        VFP.Translation.Inference,
+        VFP.Translation.TreeBuilderInput,
+        VFP.Translation.TreeBuilderOutput,
         VFP.Translation.WellKnown,
         VFP.Inference.Elaboration,
         VFP.Inference.Example,

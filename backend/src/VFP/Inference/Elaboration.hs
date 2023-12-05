@@ -10,8 +10,6 @@ import qualified Data.Set as Set
 import qualified Data.Map.Strict as Map
 import Control.Monad.State.Lazy
 
-import Debug.Trace
-
 data ElaboratedExpression = ElaboratedValueDefinition UnificationType String ElaboratedExpression
                           | ElaboratedReference UnificationType String
                           | ElaboratedTuple UnificationType ElaboratedExpression ElaboratedExpression
@@ -173,12 +171,9 @@ elaborate input toFill = do
 
 runElaboration :: InputExpression -> ElaborationState (ElaboratedExpression, TypeConstraintConjunction)
 runElaboration input = do
-    traceM $ "Input: " ++ show input
     topVariable <- getNextVariable False
     elaboratedExpression <- elaborate input topVariable
-    traceM $ "ElaboratedExpression: " ++ show elaboratedExpression
     finalState <- get
-    traceM $ "Constraints: " ++ show (constraints finalState)
     return (elaboratedExpression, constraints finalState)
 
 elaboration :: InputExpression -> (ElaboratedExpression, TypeConstraintConjunction)
