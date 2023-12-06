@@ -24,7 +24,8 @@ div[draggable="true"] {
 }
 
 #reset-button,
-#view-haskell-button {
+#view-haskell-button,
+#execute-button {
     position: absolute;
     top: 25px;
     padding: 5px;
@@ -40,6 +41,10 @@ div[draggable="true"] {
 
 #view-haskell-button {
     right: 280px;
+}
+
+#execute-button {
+    right: 150px;
 }
 
 #visual-fp-sidebar {

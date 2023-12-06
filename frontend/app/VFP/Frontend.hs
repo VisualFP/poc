@@ -55,6 +55,11 @@ resetEditorAndRenderFunction window functionEditor valueUnderConstruction = do
   _ <- element functionEditor #+ [element sourceButton]
   on UI.click sourceButton $ \_ -> onViewSourceButtonClicked functionEditor valueUnderConstruction
 
+  executeButton <- UI.button # set UI.id_ "execute-button"
+                             # set UI.text "Execute Function"
+  _ <- element functionEditor #+ [element executeButton]
+  on UI.click executeButton $ \_ -> onExecuteButtonClicked functionEditor valueUnderConstruction
+
 resetEditor :: Element -> UI ()
 resetEditor functionEditor = do
   _ <- element functionEditor # set children []
@@ -185,3 +190,34 @@ onViewSourceButtonClicked functionEditor typedValue = do
       (popup, _) <- createPopup "Error" "Cannot show Haskell code if function isn't fully defined" "error-message"
       _ <- element functionEditor #+ [element popup]
       return ()
+
+onExecuteButtonClicked :: Element -> TypedValue -> UI ()
+onExecuteButtonClicked functionEditor typedValue = do
+  let typeHoles = getTypeHolesFromValue typedValue
+  if null typeHoles
+    then do
+      if canExecuteValue typedValue
+        then do
+          let haskellCode = translateToHaskellCode typedValue
+          executionResult <- liftIO $ executeFunction "userDefinedFunction" haskellCode
+          case executionResult of
+            (Left errorMessage) -> do
+              (errorPopup, _) <- createPopup "Execution Error" errorMessage "error-message"
+              _ <- element functionEditor #+ [element errorPopup]
+              return ()
+            (Right result) -> do
+              (resultPopup, _) <- createPopup "Execution Result" result "execution-result"
+              _ <- element functionEditor #+ [element resultPopup]
+              return ()
+        else do
+          (popup, _) <- createPopup "Execution Error" "The defined value currently is not supported" "error-message"
+          _ <- element functionEditor #+ [element popup]
+          return ()
+    else do
+      (popup, _) <- createPopup "Execution Error" "Cannot execute function that isn't fully defined" "error-message"
+      _ <- element functionEditor #+ [element popup]
+      return ()
+
+canExecuteValue :: TypedValue -> Bool
+canExecuteValue (TypedValueDefinition (Primitive "String") _ _) = True
+canExecuteValue _ = False
