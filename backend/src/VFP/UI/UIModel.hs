@@ -39,15 +39,15 @@ printShortType (Function from to) = printShortType from ++ " → " ++ printShort
 instance Show Type where
   show = printShortType
 
-data TypedValue = TypedTypeHole Type Identifier -- Identifier = Increasing, inkonsistent number
+data TypedValue = TypedTypeHole Type Identifier
                 | TypedLambda Type (Type, Identifier) TypedValue
                 | TypedReference Type Identifier [TypedValue]
                 | TypedLiteral Type String
                 | TypedValueDefinition Type String TypedValue
-                deriving Show
+                deriving (Eq, Show)
 
 --                      TypeHole      FilledArgs
-data UntypedArguments = ToFill Type | ArgumentList [UntypedValue] | UnknownArgs deriving Show
+data UntypedArguments = ToFill Type | ArgumentList [UntypedValue] | UnknownArgs deriving (Eq, Show)
 
 data UntypedValue = TypeHole
                   | Lambda (Maybe Type) UntypedValue
@@ -56,7 +56,7 @@ data UntypedValue = TypeHole
                   | BooleanLiteral String
                   | StringLiteral (Maybe String)
                   | ValueDefinition (Maybe Type) String UntypedValue
-                  deriving Show
+                  deriving (Eq, Show)
 
 data Value = Untyped UntypedValue | Typed TypedValue
 

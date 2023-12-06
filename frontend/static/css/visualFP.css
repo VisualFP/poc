@@ -31,7 +31,7 @@ div[draggable="true"] {
     border: 1px solid black;
     border-radius: 5px;
     cursor: pointer;
-    background-color: orchid;
+    background-color: #f1acee;
 }
 
 #visual-fp-sidebar {
@@ -153,20 +153,20 @@ div[draggable="true"] {
     opacity: 1
 }
 
-#function-editor-container div.function-editor-element.lambda p,
-#visual-fp-sidebar div.prelude-lambda p,
-#function-editor-container div.function-editor-element.lambda .lambda-parameter {
-    background-color: #c6d3ff;
-    width: fit-content;
-}
-
 #function-editor-container div.function-editor-element.reference-value p,
 #visual-fp-sidebar div.prelude-reference p {
     background-color: #c4ffb7;
     width: fit-content
 }
 
-#function-editor-container div.function-editor-element.literal-value p,
+#function-editor-container div.function-editor-element.lambda > p,
+#visual-fp-sidebar div.prelude-lambda > p,
+#function-editor-container div.function-editor-element.lambda .lambda-parameter > p {
+    background-color: #c6d3ff;
+    width: fit-content;
+}
+
+#function-editor-container div.function-editor-element.literal-value > p,
 #visual-fp-sidebar div.literal p {
     background-color: #ffebba;
     width: fit-content
@@ -179,7 +179,7 @@ div[draggable="true"] {
     opacity: 1
 }
 
-#function-editor-container div.function-editor-element.type-hole p {
+#function-editor-container div.function-editor-element.type-hole > p {
     background-color: #dfdfdf;
     width: fit-content;
 }

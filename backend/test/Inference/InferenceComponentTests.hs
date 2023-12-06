@@ -1,6 +1,6 @@
 -- Copyright (C) 2023 Lukas Streckeisen & Jann Flepp
 
-module Inference.IntegrationTests where
+module Inference.InferenceComponentTests where
 
 import VFP.Inference.Example
 import VFP.Inference.InputModel
@@ -26,6 +26,7 @@ assertType :: InferedType -> Maybe InferedType -> IO ()
 assertType expected = assertEqual "Assert types Equal" (Just expected)
 
 getTopmostType :: InferenceResult -> Maybe InferedType
+getTopmostType (Right (InferedValueDefinition _ typ _)) = Just typ
 getTopmostType (Right (InferedReference _ typ)) = Just typ
 getTopmostType (Right (InferedLiteral _ typ)) = Just typ
 getTopmostType (Right (InferedTypeHole _ typ)) = Just typ
@@ -41,6 +42,7 @@ findTypeOfIdentifier expected (Right result) =
     where
         enumerateConstants :: InferedExpression -> [(String, InferedType)]
         enumerateConstants input = case input of
+            InferedValueDefinition _ _ inner -> enumerateConstants inner
             InferedReference n t -> [(n, t)]
             InferedLiteral n t -> [(n, t)]
             InferedTypeHole n t -> [(n, t)]
@@ -94,10 +96,9 @@ typeHoleFunctionInTypedApplicationTest = TestLabel "typeHoleFunctionInTypedAppli
 
 variableReuseTest :: Test
 variableReuseTest = TestLabel "variableReuseTest" $ TestCase $
-    let input = InputTuple inputUnknownType
-            (InputReference inputInt  "a")
-            (InputReference InputUnknownType  "a")
-        expected = InferedTupleType inferedInt inferedInt
+    let input = InputLambda inputUnknownType "i"
+            (InputReference inputInt  "i")
+        expected = InferedFunctionType inferedInt inferedInt
         result = runPipeline input
     in assertType expected $ getTopmostType result
 
@@ -135,7 +136,7 @@ lambdaCrossReferenceTest = TestLabel "lambdaCrossReferenceTest" $ TestCase $
 
 lambdaTypeInferenceTest :: Test
 lambdaTypeInferenceTest = TestLabel "lambdaTypeInferenceTest" $ TestCase $
-    let input = InputValueDefinition (InputFunction inputInt inputInt) (InputLambda inputUnknownType "a" $ InputTypeHole inputUnknownType)
+    let input = InputValueConstraint (InputFunction inputInt inputInt) (InputLambda inputUnknownType "a" $ InputTypeHole inputUnknownType)
         result = runPipeline input
     in case result of
         Right (InferedLambda (_, paramType) lambdaBody lambdaType) -> do
@@ -147,15 +148,13 @@ lambdaTypeInferenceTest = TestLabel "lambdaTypeInferenceTest" $ TestCase $
         Right _ -> assertFailure "Found unexpected expression type"
         Left _ -> assertFailure "Failed to infere lambda type"
 
-
-
-integrationTests :: Test
-integrationTests = TestLabel "IntegrationTests" $ TestList [
+inferenceComponentTests :: Test
+inferenceComponentTests = TestLabel "IntegrationTests" $ TestList [
     simpleAdditionTest,
     nestedApplicationTest,
     typeHoleTest,
     typeHoleFunctionInTypedApplicationTest,
-    -- variableReuseTest,
+    variableReuseTest,
     simpleLambdaTest,
     lambdaArgumentInferenceTest,
     lambdaWrongReturnTypeTest,

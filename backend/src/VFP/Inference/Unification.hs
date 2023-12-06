@@ -20,7 +20,6 @@ import Control.Monad.State.Lazy
 import Control.Monad
 import Data.Tuple (swap)
 
-import Debug.Trace
 import Data.List (find)
 
 {-
@@ -257,4 +256,4 @@ unification initialConstraints =
     let resultState = execState unifyUntilStable $ initialStateValue initialConstraints
         _residuals = constraints resultState
         _resolvedTypes = resolvedTypes resultState
-    in (trace ("Residual Constraints: " ++ show _residuals) _residuals, trace ("ResolvedTypes: " ++ show _resolvedTypes) _resolvedTypes)
+    in (_residuals, _resolvedTypes)
