@@ -57,10 +57,12 @@ translateTypedToHaskell (TypedLiteral typ name) =
 
 translateToHaskellCode :: TypedValue -> String
 translateToHaskellCode (TypedValueDefinition typ name inner) = name ++ " :: " ++ (translateTypeToHaskellType typ) ++ "\n" ++ name ++ " = " ++ (translateToHaskellCode inner)
-translateToHaskellCode (TypedTypeHole _ _) = error "No type holes allowed"
+translateToHaskellCode (TypedTypeHole _ _) = "_"
 translateToHaskellCode (TypedLambda _ (_, pname) body) = brace $ "\\" ++ pname ++ " -> " ++ translateToHaskellCode body
 translateToHaskellCode (TypedReference _ "if" [condition, thenBody, elseBody]) = "if " ++ translateToHaskellCode condition ++ "\n\tthen " ++ translateToHaskellCode thenBody ++ "\n\telse " ++ translateToHaskellCode elseBody
-translateToHaskellCode (TypedReference _ name args) = name ++ " " ++ intercalate " " (map (\arg -> brace $ translateToHaskellCode arg) args)
+translateToHaskellCode (TypedReference _ name args) = if null args
+    then name
+    else name ++ " " ++ intercalate " " (map (\arg -> brace $ translateToHaskellCode arg) args)
 translateToHaskellCode (TypedLiteral typ name) = case typ of
     (Primitive _) -> name
     _ -> error $ "Unsuppported literal type " ++ show typ

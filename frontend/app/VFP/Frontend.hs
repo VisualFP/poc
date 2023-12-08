@@ -170,18 +170,11 @@ createEditorResetButton = UI.button # set UI.id_ "reset-button"
 
 onViewSourceButtonClicked :: Element -> TypedValue -> UI ()
 onViewSourceButtonClicked functionEditor typedValue = do
-  let typeHoles = getTypeHolesFromValue typedValue
-  if null typeHoles
-    then do
-      overlay <- UI.div #. "popup-overlay"
-      let haskellCode = translateToHaskellCode typedValue
-      (popup, dismissEvent) <- createPopup "Haskell Code" haskellCode "view-haskell-popup"
-      
-      _ <- element overlay #+ [element popup]
-      _ <- element functionEditor #+ [element overlay]
-      _ <- onEvent dismissEvent $ \_ -> delete overlay
-      return ()
-    else do
-      (popup, _) <- createPopup "Error" "Cannot show Haskell code if function isn't fully defined" "error-message"
-      _ <- element functionEditor #+ [element popup]
-      return ()
+  overlay <- UI.div #. "popup-overlay"
+  let haskellCode = translateToHaskellCode typedValue
+  (popup, dismissEvent) <- createPopup "Haskell Code" haskellCode "view-haskell-popup"
+  
+  _ <- element overlay #+ [element popup]
+  _ <- element functionEditor #+ [element overlay]
+  _ <- onEvent dismissEvent $ \_ -> delete overlay
+  return ()
