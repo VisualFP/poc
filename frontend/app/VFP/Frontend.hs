@@ -10,6 +10,7 @@ import VFP.UI.UIModel
 import qualified VFP.Translation.WellKnown as WellKnown
 import Data.Char (toLower)
 import VFP.Translation.TranslateToHaskellSource (translateToHaskellCode)
+import VFP.Execution.FunctionExecution
 
 start :: Int -> String -> IO ()
 start port dir = startGUI
