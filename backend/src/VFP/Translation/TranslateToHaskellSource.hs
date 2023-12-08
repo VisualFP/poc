@@ -60,7 +60,7 @@ translateToHaskellCode (TypedValueDefinition typ name inner) = name ++ " :: " ++
 translateToHaskellCode (TypedTypeHole _ _) = error "No type holes allowed"
 translateToHaskellCode (TypedLambda _ (_, pname) body) = brace $ "\\" ++ pname ++ " -> " ++ translateToHaskellCode body
 translateToHaskellCode (TypedReference _ "if" [condition, thenBody, elseBody]) = "if " ++ translateToHaskellCode condition ++ "\n\tthen " ++ translateToHaskellCode thenBody ++ "\n\telse " ++ translateToHaskellCode elseBody
-translateToHaskellCode (TypedReference _ name args) = name ++ " " ++ intercalate " " (map translateToHaskellCode args)
+translateToHaskellCode (TypedReference _ name args) = name ++ " " ++ intercalate " " (map (\arg -> brace $ translateToHaskellCode arg) args)
 translateToHaskellCode (TypedLiteral typ name) = case typ of
     (Primitive _) -> name
     _ -> error $ "Unsuppported literal type " ++ show typ
@@ -69,4 +69,5 @@ translateTypeToHaskellType :: Type -> String
 translateTypeToHaskellType (Primitive n) = n
 translateTypeToHaskellType (Generic num) = [chr (ord 'a' - 1 + num)]
 translateTypeToHaskellType (List inner) = "[" ++ translateTypeToHaskellType inner ++ "]"
-translateTypeToHaskellType (Function from to) = translateTypeToHaskellType from ++ " -> " ++ translateTypeToHaskellType to
+translateTypeToHaskellType (Function (Function fromFrom fromTo) to) = (brace $ translateTypeToHaskellType (Function fromFrom fromTo)) ++ " → " ++ translateTypeToHaskellType to
+translateTypeToHaskellType (Function from to) = translateTypeToHaskellType from ++ " → " ++ translateTypeToHaskellType to
