@@ -9,6 +9,7 @@ import Control.Monad (unless)
 import VFP.UI.UIModel
 import qualified VFP.Translation.WellKnown as WellKnown
 import Data.Char (toLower)
+import VFP.Translation.TranslateToHaskellSource (translateToHaskellCode)
 
 start :: Int -> String -> IO ()
 start port dir = startGUI
@@ -48,7 +49,11 @@ resetEditorAndRenderFunction window functionEditor valueUnderConstruction = do
   let functionElement = generateValueElement valueUnderConstruction
   _ <- element functionEditor #+ [functionElement]
   registerFunctionDroppedEvents window functionEditor valueUnderConstruction
-  return ()
+
+  sourceButton <- UI.button # set UI.id_ "view-haskell-button"
+                            # set UI.text "View Haskell"
+  _ <- element functionEditor #+ [element sourceButton]
+  on UI.click sourceButton $ \_ -> onViewSourceButtonClicked functionEditor valueUnderConstruction
 
 resetEditor :: Element -> UI ()
 resetEditor functionEditor = do
@@ -76,7 +81,8 @@ registerFunctionDroppedEvent window functionEditor valueUnderConstruction event 
       UpdateSuccess updatedValueDefinition -> do
         resetEditorAndRenderFunction window functionEditor updatedValueDefinition
       UpdateError e -> do
-        _ <- element functionEditor #+ [createErrorMessage e]
+        (popup, _) <- createPopup "Error" e "error-message"
+        _ <- element functionEditor #+ [element popup]
         runFunction $ ffi $ "console.error('Failed to update function: " ++ e ++ "')"
     return ()
   return ()
@@ -145,15 +151,30 @@ createSideBarContainer = UI.new # set UI.id_ "visual-fp-sidebar"
 createFunctionEditorContainer :: UI Element
 createFunctionEditorContainer = UI.new # set UI.id_ "function-editor-container"
 
-createErrorMessage :: String -> UI Element
-createErrorMessage errorMessage = do
-  errorElement <- UI.div #. "error-message"
-  errorMessageElement <- UI.p # set UI.text errorMessage
-  errorDismissButton <- UI.button # set UI.text "X"
-  _ <- element errorElement #+ [element errorMessageElement, element errorDismissButton]
-  on UI.click errorDismissButton $ \_ -> delete errorElement
-  return errorElement
+createPopup :: String -> String -> String -> UI (Element, Event ())
+createPopup popupTitle content popupType = do
+  popupElement <- UI.div #. ("popup " ++ popupType)
+  titleElement <- UI.p # set UI.text popupTitle
+                       #. "popup-title"
+  contentElement <- UI.p # set UI.text content
+                         #. "popup-content"
+  dismissButton <- UI.button # set UI.text "X"
+  _ <- element popupElement #+ [element titleElement, element dismissButton, element contentElement]
+  let dismissEvent = UI.click dismissButton
+  _ <- onEvent dismissEvent $ \_ -> delete popupElement
+  return (popupElement, dismissEvent)
 
 createEditorResetButton :: UI Element
-createEditorResetButton = UI.div # set UI.id_ "reset-button"
+createEditorResetButton = UI.button # set UI.id_ "reset-button"
                                  # set UI.text "Reset Editor"
+
+onViewSourceButtonClicked :: Element -> TypedValue -> UI ()
+onViewSourceButtonClicked functionEditor typedValue = do
+  overlay <- UI.div #. "popup-overlay"
+  let haskellCode = translateToHaskellCode typedValue
+  (popup, dismissEvent) <- createPopup "Haskell Code" haskellCode "view-haskell-popup"
+  
+  _ <- element overlay #+ [element popup]
+  _ <- element functionEditor #+ [element overlay]
+  _ <- onEvent dismissEvent $ \_ -> delete overlay
+  return ()

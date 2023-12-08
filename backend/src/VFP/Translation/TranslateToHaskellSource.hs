@@ -1,6 +1,7 @@
-module VFP.Translation.TranslateToHaskellSource(translateTypedToHaskell, translateUntypedToHaskell) where
+module VFP.Translation.TranslateToHaskellSource(translateTypedToHaskell, translateUntypedToHaskell, translateToHaskellCode) where
 import VFP.UI.UIModel
 import Data.List
+import Data.Char
 
 brace :: String -> String
 brace str = "(" ++ str ++ ")"
@@ -54,3 +55,21 @@ translateTypedToHaskell (TypedReference typ name args) =
 translateTypedToHaskell (TypedLiteral typ name) =
     "TypedLiteral " ++ brace (printHaskellType typ) ++ space ++ quote name
 
+translateToHaskellCode :: TypedValue -> String
+translateToHaskellCode (TypedValueDefinition typ name inner) = name ++ " :: " ++ (translateTypeToHaskellType typ) ++ "\n" ++ name ++ " = " ++ (translateToHaskellCode inner)
+translateToHaskellCode (TypedTypeHole _ _) = "_"
+translateToHaskellCode (TypedLambda _ (_, pname) body) = brace $ "\\" ++ pname ++ " -> " ++ translateToHaskellCode body
+translateToHaskellCode (TypedReference _ "if" [condition, thenBody, elseBody]) = "if " ++ translateToHaskellCode condition ++ "\n\tthen " ++ translateToHaskellCode thenBody ++ "\n\telse " ++ translateToHaskellCode elseBody
+translateToHaskellCode (TypedReference _ name args) = if null args
+    then name
+    else name ++ " " ++ intercalate " " (map (\arg -> brace $ translateToHaskellCode arg) args)
+translateToHaskellCode (TypedLiteral typ name) = case typ of
+    (Primitive _) -> name
+    _ -> error $ "Unsuppported literal type " ++ show typ
+
+translateTypeToHaskellType :: Type -> String
+translateTypeToHaskellType (Primitive n) = n
+translateTypeToHaskellType (Generic num) = [chr (ord 'a' - 1 + num)]
+translateTypeToHaskellType (List inner) = "[" ++ translateTypeToHaskellType inner ++ "]"
+translateTypeToHaskellType (Function (Function fromFrom fromTo) to) = (brace $ translateTypeToHaskellType (Function fromFrom fromTo)) ++ " → " ++ translateTypeToHaskellType to
+translateTypeToHaskellType (Function from to) = translateTypeToHaskellType from ++ " → " ++ translateTypeToHaskellType to
