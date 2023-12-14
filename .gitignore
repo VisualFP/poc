@@ -13,9 +13,9 @@ build
 
 dist-newstyle
 
-electron-app/dist
-electron-app/out
-electron-app/threepenny
+electron-app/bin
+electron-app/VFP-win32-x64/
+electron-app/VFP-linux-x64/
 
 # Editor directories and files
 .vscode/
