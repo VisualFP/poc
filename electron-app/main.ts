@@ -12,11 +12,7 @@ import waitOn = require('wait-on')
 // Time to wait for Threepenny server, milliseconds
 const timeout = 10000;
 // Relative path to the Threepenny binary.
-const threepennyBin = 'threepenny/visual-fp-frontend';
-const threepennyResources = 'threepenny/static';
-
-const resourcePath = app.isPackaged ? process.resourcesPath : joinPath(__dirname, '..')
-app.setName('VisualFP')
+const relBin = './bin/visual-fp-frontend';
 
 // Assign a random port to run on.
 freeport((err, port) => {
@@ -35,7 +31,7 @@ freeport((err, port) => {
     // browser windows. Some APIs can only be used after this event occurs. We
     // start the child process and wait before loading the web page.
     app.on('ready', () => {
-        child = spawn(joinPath(resourcePath, threepennyBin), [port.toString(), joinPath(resourcePath, threepennyResources)]);
+        child = spawn(joinPath(__dirname, relBin), [port.toString(), joinPath(__dirname, 'bin', 'static')]);
         child.stdout.setEncoding('utf8');
         child.stderr.setEncoding('utf8');
         child.stdout.on('data', console.log);
