@@ -1,5 +1,5 @@
 #! /bin/bash
-INSTALL_DIR=./electron-app/build/bin
+INSTALL_DIR=./electron-app/threepenny
 STATIC_RESOURCES=./frontend/static
 
 echo "Clean install directory $INSTALL_DIR"
