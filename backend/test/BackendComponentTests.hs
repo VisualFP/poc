@@ -1,4 +1,4 @@
-module IntegrationTests where
+module BackendComponentTests where
 
 import VFP.Translation.Inference
 import Test.HUnit
@@ -70,8 +70,8 @@ threeNestedIdentities = TestLabel "threeNestedIdentities" $ TestCase $
         Success r -> assertEqual "typed value equals" expected r
         Error _ -> assertFailure "inference failed"
 
-integrationTests :: Test
-integrationTests = TestLabel "IntegrationTests" $ TestList [
+backendComponentTests :: Test
+backendComponentTests = TestLabel "ComponentTests" $ TestList [
     lambdaAtTopMostTypeHole,
     lambdaParameterScopeViolation,
     recursiveCall,
