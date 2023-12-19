@@ -33,7 +33,7 @@ test-suite VFP--test
     other-modules:
         Inference.UnificationTests,
         Inference.InferenceComponentTests,
-        IntegrationTests,
+        BackendComponentTests,
         UI.UIModelTests,
         Translation.InferenceTranslationTest
     build-depends:
@@ -41,4 +41,5 @@ test-suite VFP--test
         containers,
         visual-fp-backend,
         HUnit ^>= 1.6.2
+    default-language:   Haskell2010
     ghc-options: -Wall
